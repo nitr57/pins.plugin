@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework Condition="!$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))">net8.0-windows7.0</TargetFramework>
+    <TargetFramework Condition="$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))">net10.0</TargetFramework>
     <OutputType>Library</OutputType>
     <RootNamespace>NINA.PINS</RootNamespace>
     <AssemblyName>NINA.PINS</AssemblyName>
@@ -8,14 +9,15 @@
     <UseWPF Condition="!$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))">true</UseWPF>
     <ImportWindowsDesktopTargets Condition="!$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))">true</ImportWindowsDesktopTargets>
     <EnableWindowsTargeting Condition="!$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))">true</EnableWindowsTargeting>
+    <Platforms Condition="!$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))">AnyCPU;x64</Platforms>
     <DefaultItemExcludes Condition="$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))">$(DefaultItemExcludes);**/*.xaml.cs;**/*.xaml</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Condition="!$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))" Include="NINA.Plugin" Version="3.1.2.9001" />
+    <PackageReference Condition="!$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))" Include="NINA.Plugin" Version="3.2.0.1061-nightly" />
   </ItemGroup>
   <ItemGroup Condition="$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))">
-    <ProjectReference Include="/home/nico/Hobby/pins/NINA.Plugin/NINA.Plugin.csproj" />
-    <ProjectReference Include="/home/nico/Hobby/pins/System.Windows.Compat/System.Windows.Compat.csproj" />
+    <ProjectReference Include="../../NINA.Plugin/NINA.Plugin.csproj" />
+    <ProjectReference Include="../../System.Windows.Compat/System.Windows.Compat.csproj" />
     <PackageReference Include="System.Drawing.Common" Version="*" ExcludeAssets="all" />
   </ItemGroup>
   <PropertyGroup />
