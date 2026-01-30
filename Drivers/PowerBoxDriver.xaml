@@ -1,0 +1,174 @@
+﻿<ResourceDictionary
+    x:Class="NINA.PINS.Drivers.PINSPowerBoxDriver"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core"
+    xmlns:pbview="clr-namespace:NINA.PINS.Views.PowerBox"
+    xmlns:view="clr-namespace:NINA.PINS.Views">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="../Resources/SVGDictionary.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+    <DataTemplate x:Key="NINA.PINS.Drivers.PowerBoxDriver_SwitchSettings">
+        <Grid Margin="5" VerticalAlignment="Top">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TabControl
+                    MinWidth="40"
+                    IsEnabled="{Binding Path=IsEnabledUI}"
+                    Style="{StaticResource SecondLevelTabControl}"
+                    TabStripPlacement="Left">
+
+                    <!--  Info  -->
+                    <TabItem>
+                        <TabItem.Header>
+                            <Grid>
+                                <Grid MinWidth="50">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition />
+                                        <RowDefinition Height="10" />
+                                    </Grid.RowDefinitions>
+                                    <Grid>
+                                        <Grid Width="40" Height="40">
+                                            <Path
+                                                Margin="5"
+                                                Data="{StaticResource AboutSVG}"
+                                                Stretch="Uniform"
+                                                Style="{StaticResource TabItemPath}"
+                                                UseLayoutRounding="True" />
+                                        </Grid>
+                                    </Grid>
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        Style="{StaticResource SideBarTextBlock}"
+                                        Text="Info" />
+                                </Grid>
+                            </Grid>
+                        </TabItem.Header>
+                        <TabItem.Content>
+                            <pbview:InfoView />
+                        </TabItem.Content>
+                    </TabItem>
+                    <!--  Power ports  -->
+                    <TabItem>
+                        <TabItem.Header>
+                            <Grid>
+                                <Grid MinWidth="50">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition />
+                                        <RowDefinition Height="10" />
+                                    </Grid.RowDefinitions>
+                                    <Grid>
+                                        <Grid Width="40" Height="40">
+                                            <Path
+                                                Margin="5"
+                                                Data="{StaticResource PowerSVG}"
+                                                Stretch="Uniform"
+                                                Style="{StaticResource TabItemPath}"
+                                                UseLayoutRounding="True" />
+                                        </Grid>
+                                    </Grid>
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        Style="{StaticResource SideBarTextBlock}"
+                                        Text="Power Ports" />
+                                </Grid>
+                            </Grid>
+                        </TabItem.Header>
+                        <TabItem.Content>
+                            <pbview:PowerPortView />
+                        </TabItem.Content>
+                    </TabItem>
+                    <!--  USB ports  -->
+                    <TabItem>
+                        <TabItem.Header>
+                            <Grid>
+                                <Grid MinWidth="50">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition />
+                                        <RowDefinition Height="10" />
+                                    </Grid.RowDefinitions>
+                                    <Grid>
+                                        <Grid Width="40" Height="40">
+                                            <Path
+                                                Margin="5"
+                                                Data="{StaticResource USBSVG}"
+                                                Stretch="Uniform"
+                                                Style="{StaticResource TabItemPath}"
+                                                UseLayoutRounding="True" />
+                                        </Grid>
+                                    </Grid>
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        Style="{StaticResource SideBarTextBlock}"
+                                        Text="USB Ports" />
+                                </Grid>
+                            </Grid>
+                        </TabItem.Header>
+                        <TabItem.Content>
+                            <pbview:USBPortView />
+                        </TabItem.Content>
+                    </TabItem>
+                    <!--  Dew ports  -->
+                    <TabItem>
+                        <TabItem.Header>
+                            <Grid>
+                                <Grid MinWidth="50">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition />
+                                        <RowDefinition Height="10" />
+                                    </Grid.RowDefinitions>
+                                    <Grid>
+                                        <Grid Width="40" Height="40">
+                                            <Path
+                                                Margin="5"
+                                                Data="{StaticResource SwitchesSVG}"
+                                                Stretch="Uniform"
+                                                Style="{StaticResource TabItemPath}"
+                                                UseLayoutRounding="True" />
+                                        </Grid>
+                                    </Grid>
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        Style="{StaticResource SideBarTextBlock}"
+                                        Text="Dew Ports" />
+                                </Grid>
+                            </Grid>
+                        </TabItem.Header>
+                        <TabItem.Content>
+                            <pbview:DewPortView />
+                        </TabItem.Content>
+                    </TabItem>
+                    <!--  WiFi  -->
+                    <TabItem>
+                        <TabItem.Header>
+                            <Grid>
+                                <Grid MinWidth="50">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition />
+                                        <RowDefinition Height="10" />
+                                    </Grid.RowDefinitions>
+                                    <Grid>
+                                        <Grid Width="40" Height="40">
+                                            <Path
+                                                Margin="5"
+                                                Data="{StaticResource WiFiSVG}"
+                                                Stretch="Uniform"
+                                                Style="{StaticResource TabItemPath}"
+                                                UseLayoutRounding="True" />
+                                        </Grid>
+                                    </Grid>
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        Style="{StaticResource SideBarTextBlock}"
+                                        Text="WiFi" />
+                                </Grid>
+                            </Grid>
+                        </TabItem.Header>
+                        <TabItem.Content>
+                            <view:WiFiView />
+                        </TabItem.Content>
+                    </TabItem>
+                </TabControl>
+            </ScrollViewer>
+        </Grid>
+    </DataTemplate>
+</ResourceDictionary>

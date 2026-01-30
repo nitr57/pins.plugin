@@ -1,0 +1,137 @@
+﻿<UserControl
+    x:Class="NINA.PINS.Views.MeteoStation.ConfigView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:NINA.PINS.Views.MeteoStation"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ninactrl="clr-namespace:NINA.CustomControlLibrary;assembly=NINA.CustomControlLibrary"
+    xmlns:util="clr-namespace:NINA.Core.Utility.ValidationRules;assembly=NINA.Core"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d">
+    <Grid>
+        <StackPanel>
+            <!--  Temperature offset  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" Text="Temperature offset" />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(-12.5 - 12.5)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <ninactrl:UnitTextBox Unit="°C">
+                        <ninactrl:UnitTextBox.Text>
+                            <Binding Path="TemperatureOffset" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:DoubleRangeRule>
+                                        <util:DoubleRangeRule.ValidRange>
+                                            <util:DoubleRangeChecker Maximum="12.5" Minimum="-12.5" />
+                                        </util:DoubleRangeRule.ValidRange>
+                                    </util:DoubleRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </ninactrl:UnitTextBox.Text>
+                    </ninactrl:UnitTextBox>
+                </UniformGrid>
+            </Border>
+            <!--  Humidity offset  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" Text="Humidity offset" />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(-12.5 - 12.5)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <ninactrl:UnitTextBox Unit="%">
+                        <ninactrl:UnitTextBox.Text>
+                            <Binding Path="HumidityOffset" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:DoubleRangeRule>
+                                        <util:DoubleRangeRule.ValidRange>
+                                            <util:DoubleRangeChecker Maximum="12.5" Minimum="-12.5" />
+                                        </util:DoubleRangeRule.ValidRange>
+                                    </util:DoubleRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </ninactrl:UnitTextBox.Text>
+                    </ninactrl:UnitTextBox>
+                </UniformGrid>
+            </Border>
+            <!--  Update rate  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" Text="Update rate" />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(1 - 60)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <ninactrl:UnitTextBox Unit="s">
+                        <ninactrl:UnitTextBox.Text>
+                            <Binding Path="UpdateRate" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:IntRangeRule>
+                                        <util:IntRangeRule.ValidRange>
+                                            <util:IntRangeChecker Maximum="60" Minimum="1" />
+                                        </util:IntRangeRule.ValidRange>
+                                    </util:IntRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </ninactrl:UnitTextBox.Text>
+                    </ninactrl:UnitTextBox>
+                </UniformGrid>
+            </Border>
+            <!--  Lux correction factor  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" Text="Lux correction" />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(0 - 10)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBox VerticalAlignment="Center">
+                        <TextBox.Text>
+                            <Binding Path="LuxScalingFactor" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:DoubleRangeRule>
+                                        <util:DoubleRangeRule.ValidRange>
+                                            <util:DoubleRangeChecker Maximum="10.0" Minimum="0.0" />
+                                        </util:DoubleRangeRule.ValidRange>
+                                    </util:DoubleRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
+                </UniformGrid>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>

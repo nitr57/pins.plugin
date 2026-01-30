@@ -1,0 +1,87 @@
+﻿<UserControl
+    x:Class="NINA.PINS.Resources.Styles.PortControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:NINA.PINS.Resources.Styles"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    x:Name="PortControlRoot"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </UserControl.Resources>
+    <Grid>
+        <StackPanel
+            Margin="0,5,0,0"
+            Orientation="Horizontal"
+            Visibility="{Binding PortOvercurrent, ElementName=PortControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <TextBlock VerticalAlignment="Center" Text="Overcurrent occurred on" />
+            <TextBlock
+                Margin="5,0,0,0"
+                VerticalAlignment="Center"
+                Text="{Binding PortName, ElementName=PortControlRoot}" />
+            <Button MinWidth="80" Margin="5,0,0,0">
+                <Button.Command>
+                    <Binding Path="PortCommand" />
+                </Button.Command>
+                <!--
+                <Button.CommandParameter>
+                    <MultiBinding Converter="{StaticResource APO_PortConverter}">
+                        <Binding Path="IsPressed" RelativeSource="{RelativeSource Self}" />
+                        <Binding ElementName="PortControlRoot" Path="PortNumber" />
+                        <Binding ElementName="PortControlRoot" Path="PortType" />
+                        <Binding Source="{x:Static enums:CommandsEnum.APO_APB_OVERCURRENT}" />
+                    </MultiBinding>
+                </Button.CommandParameter>-->
+                <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Clear" />
+            </Button>
+        </StackPanel>
+        <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding PortOvercurrent, ElementName=PortControlRoot}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+            <TextBox
+                x:Name="MyTextBox"
+                Grid.Column="1"
+                Width="120"
+                Height="20"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center"
+                VerticalContentAlignment="Center"
+                Text="{Binding PortText, ElementName=PortControlRoot, UpdateSourceTrigger=LostFocus}"
+                TextWrapping="NoWrap" />
+            <CheckBox
+                Margin="10,0,0,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                IsChecked="{Binding PortState, ElementName=PortControlRoot, Mode=TwoWay}" />
+            <TextBlock
+                Width="40"
+                Height="20"
+                Margin="10,0,0,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Text="{Binding PortCurrent, StringFormat='{}{0} A', ElementName=PortControlRoot}" />
+            <TextBlock
+                Height="18"
+                Margin="10,0,0,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Text="Bootstrap" />
+            <CheckBox
+                Margin="10,0,0,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                IsChecked="{Binding PortBootstrap, ElementName=PortControlRoot, Mode=TwoWay}" />
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -1,0 +1,346 @@
+﻿<UserControl
+    x:Class="NINA.PINS.Views.MeteoStation.CloudModelView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:NINA.PINS.Views.MeteoStation"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:util="clr-namespace:NINA.Core.Utility.ValidationRules;assembly=NINA.Core"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d">
+    <Grid>
+        <StackPanel>
+            <!--  Cloud K1  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="K1"
+                            ToolTip="K1 mainly affects the slope of the curve in it's linear section for ambient temperatures below 25°C." />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(-100 - 100)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBox VerticalAlignment="Center">
+                        <TextBox.Text>
+                            <Binding Path="CloudK1" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:IntRangeRule>
+                                        <util:IntRangeRule.ValidRange>
+                                            <util:IntRangeChecker Maximum="100" Minimum="-100" />
+                                        </util:IntRangeRule.ValidRange>
+                                    </util:IntRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
+                </UniformGrid>
+            </Border>
+            <!--  Cloud K2  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="K2"
+                            ToolTip="K2 mainly affects the x-axis crossing point - it shifts the curve upwards." />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(-100 - 100)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBox VerticalAlignment="Center">
+                        <TextBox.Text>
+                            <Binding Path="CloudK2" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:IntRangeRule>
+                                        <util:IntRangeRule.ValidRange>
+                                            <util:IntRangeChecker Maximum="100" Minimum="-100" />
+                                        </util:IntRangeRule.ValidRange>
+                                    </util:IntRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
+                </UniformGrid>
+            </Border>
+            <!--  Cloud K3  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="K3"
+                            ToolTip="K3 has effect on the shape of the curve for ambient temperatures above 30°C." />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(-100 - 100)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBox VerticalAlignment="Center">
+                        <TextBox.Text>
+                            <Binding Path="CloudK3" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:IntRangeRule>
+                                        <util:IntRangeRule.ValidRange>
+                                            <util:IntRangeChecker Maximum="100" Minimum="-100" />
+                                        </util:IntRangeRule.ValidRange>
+                                    </util:IntRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
+                </UniformGrid>
+            </Border>
+            <!--  Cloud K4  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="K4"
+                            ToolTip="K4 has effect on the shape of the curve for ambient temperatures above 30°C." />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(-100 - 100)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBox VerticalAlignment="Center">
+                        <TextBox.Text>
+                            <Binding Path="CloudK4" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:IntRangeRule>
+                                        <util:IntRangeRule.ValidRange>
+                                            <util:IntRangeChecker Maximum="100" Minimum="-100" />
+                                        </util:IntRangeRule.ValidRange>
+                                    </util:IntRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
+                </UniformGrid>
+            </Border>
+            <!--  Cloud K5  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="K5"
+                            ToolTip="K5 has effect on the shape of the curve for ambient temperatures above 30°C." />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(-100 - 100)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBox VerticalAlignment="Center">
+                        <TextBox.Text>
+                            <Binding Path="CloudK5" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:IntRangeRule>
+                                        <util:IntRangeRule.ValidRange>
+                                            <util:IntRangeChecker Maximum="100" Minimum="-100" />
+                                        </util:IntRangeRule.ValidRange>
+                                    </util:IntRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
+                </UniformGrid>
+            </Border>
+            <!--  Cloud K6  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="K6"
+                            ToolTip="K6 introduces an S bent around x-axis crossing point." />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(-100 - 100)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBox VerticalAlignment="Center">
+                        <TextBox.Text>
+                            <Binding Path="CloudK6" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:IntRangeRule>
+                                        <util:IntRangeRule.ValidRange>
+                                            <util:IntRangeChecker Maximum="100" Minimum="-100" />
+                                        </util:IntRangeRule.ValidRange>
+                                    </util:IntRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
+                </UniformGrid>
+            </Border>
+            <!--  Cloud K7  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="K7"
+                            ToolTip="K7 introduces an S bent around x-axis crossing point." />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(-100 - 100)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBox VerticalAlignment="Center">
+                        <TextBox.Text>
+                            <Binding Path="CloudK7" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:IntRangeRule>
+                                        <util:IntRangeRule.ValidRange>
+                                            <util:IntRangeChecker Maximum="100" Minimum="-100" />
+                                        </util:IntRangeRule.ValidRange>
+                                    </util:IntRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
+                </UniformGrid>
+            </Border>
+            <!--  Cloud CTO  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="Temperature overcast"
+                            ToolTip="This is a threshold value for the sky corrected temperature of clouds. Any measurement above this means 100% clouds." />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(-30 - 30)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBox VerticalAlignment="Center">
+                        <TextBox.Text>
+                            <Binding Path="CloudTemperatureOvercast" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:IntRangeRule>
+                                        <util:IntRangeRule.ValidRange>
+                                            <util:IntRangeChecker Maximum="30" Minimum="-30" />
+                                        </util:IntRangeRule.ValidRange>
+                                    </util:IntRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
+                </UniformGrid>
+            </Border>
+            <!--  Cloud CTC  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="Temperature clear"
+                            ToolTip="This is a threshold value used to determine if the sky is clear after comparing it against the corrected sky temperature." />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(-30 - 30)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBox VerticalAlignment="Center">
+                        <TextBox.Text>
+                            <Binding Path="CloudTemperatureClear" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:IntRangeRule>
+                                        <util:IntRangeRule.ValidRange>
+                                            <util:IntRangeChecker Maximum="30" Minimum="-30" />
+                                        </util:IntRangeRule.ValidRange>
+                                    </util:IntRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
+                </UniformGrid>
+            </Border>
+            <!--  Cloud CFP  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="Flag percent"
+                            ToolTip="This threshold is used to determine the switch between a clear and a cloudy sky." />
+                        <StackPanel Opacity="0.4" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="(0 - 100)" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBox VerticalAlignment="Center">
+                        <TextBox.Text>
+                            <Binding Path="CloudFlagPercent" UpdateSourceTrigger="LostFocus">
+                                <Binding.ValidationRules>
+                                    <util:IntRangeRule>
+                                        <util:IntRangeRule.ValidRange>
+                                            <util:IntRangeChecker Maximum="100" Minimum="0" />
+                                        </util:IntRangeRule.ValidRange>
+                                    </util:IntRangeRule>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
+                </UniformGrid>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -1,0 +1,84 @@
+﻿<UserControl
+    x:Class="NINA.PINS.Views.InfoView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:NINA.PINS.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d">
+    <Grid>
+        <StackPanel>
+            <!--  Unique ID  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <TextBlock Text="Unique ID" />
+                    <TextBlock
+                        Margin="5,0,0,0"
+                        Text="{Binding UniqueId}"
+                        TextWrapping="Wrap" />
+                </UniformGrid>
+            </Border>
+            <!--  Firmware version  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <TextBlock Text="Firmware" />
+                    <TextBlock
+                        Margin="5,0,0,0"
+                        Text="{Binding Firmware}"
+                        TextWrapping="WrapWithOverflow" />
+                </UniformGrid>
+            </Border>
+            <!--  Uptime  -->
+            <Border BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <TextBlock Text="Uptime" />
+                    <TextBlock
+                        Margin="5,0,0,0"
+                        Text="{Binding UpTimeFormatted}"
+                        TextWrapping="WrapWithOverflow" />
+                </UniformGrid>
+            </Border>
+            <!--  Reboot button  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <TextBlock />
+                    <Button
+                        Grid.Column="1"
+                        Height="20"
+                        Margin="5,0,0,0"
+                        Command="{Binding RebootCommand}"
+                        Content="Reboot" />
+                </UniformGrid>
+            </Border>
+            <!--  Factory Reset button  -->
+            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                <UniformGrid
+                    Margin="0,6,0,6"
+                    VerticalAlignment="Center"
+                    Columns="2">
+                    <TextBlock />
+                    <Button
+                        Grid.Column="1"
+                        Height="20"
+                        Margin="5,0,0,0"
+                        Command="{Binding ResetCommand}"
+                        Content="Factory reset" />
+                </UniformGrid>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>

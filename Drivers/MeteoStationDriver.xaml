@@ -1,0 +1,53 @@
+﻿<ResourceDictionary
+    x:Class="NINA.PINS.Drivers.PINSMeteoStationDriver"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:meteoview="clr-namespace:NINA.PINS.Views.MeteoStation"
+    xmlns:view="clr-namespace:NINA.PINS.Views">
+    <DataTemplate x:Key="NINA.PINS.Drivers.MeteoStationDriver_WeatherDataSettings">
+        <ScrollViewer IsEnabled="{Binding Path=IsEnabledUI}" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer.Content>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <GroupBox>
+                        <GroupBox.Header>
+                            <Grid Height="40" Margin="5">
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontSize="16"
+                                    Text="Configuration" />
+                            </Grid>
+                        </GroupBox.Header>
+                        <meteoview:ConfigView />
+                    </GroupBox>
+                    <GroupBox Grid.Row="1">
+                        <GroupBox.Header>
+                            <Grid Height="40" Margin="5">
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontSize="16"
+                                    Text="Cloud model" />
+                            </Grid>
+                        </GroupBox.Header>
+                        <meteoview:CloudModelView />
+                    </GroupBox>
+                    <GroupBox Grid.Row="2">
+                        <GroupBox.Header>
+                            <Grid Height="40" Margin="5">
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontSize="16"
+                                    Text="Device information" />
+                            </Grid>
+                        </GroupBox.Header>
+                        <view:InfoView />
+                    </GroupBox>
+                </Grid>
+            </ScrollViewer.Content>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

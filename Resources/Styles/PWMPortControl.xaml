@@ -1,0 +1,107 @@
+﻿<UserControl
+    x:Class="NINA.PINS.Resources.Styles.PWMPortControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:NINA.PINS.Resources.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:NINA.PINS.Resources.Styles"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ninactrl="clr-namespace:NINA.CustomControlLibrary;assembly=NINA.CustomControlLibrary"
+    x:Name="PWMPortControlRoot"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <converters:DutyCycleToPercentageConverter x:Key="DutyCycleToPercentageConverter" />
+    </UserControl.Resources>
+    <Grid>
+        <StackPanel
+            Margin="0,5,0,0"
+            Orientation="Horizontal"
+            Visibility="{Binding PortOvercurrent, ElementName=PWMPortControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <TextBlock VerticalAlignment="Center" Text="Overcurrent occurred on" />
+            <TextBlock
+                Margin="5,0,0,0"
+                VerticalAlignment="Center"
+                Text="{Binding PortName, ElementName=PWMPortControlRoot}" />
+            <TextBlock
+                Margin="5,0,0,0"
+                VerticalAlignment="Center"
+                Text="(" />
+            <TextBlock VerticalAlignment="Center" Text="{Binding PortText, ElementName=PWMPortControlRoot}" />
+            <TextBlock VerticalAlignment="Center" Text=")" />
+            <Button MinWidth="80" Margin="5,0,0,0">
+                <Button.Command>
+                    <Binding Path="PortCommand" />
+                </Button.Command>
+                <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Clear" />
+            </Button>
+        </StackPanel>
+        <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding PortOvercurrent, ElementName=PWMPortControlRoot}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+            <TextBox
+                x:Name="PWMTextBox"
+                Grid.Column="1"
+                Width="120"
+                Height="20"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center"
+                VerticalContentAlignment="Center"
+                Text="{Binding PortText, ElementName=PWMPortControlRoot, UpdateSourceTrigger=LostFocus}"
+                TextWrapping="NoWrap" />
+            <CheckBox
+                Margin="10,0,0,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                IsChecked="{Binding PortState, ElementName=PWMPortControlRoot, Mode=TwoWay}" />
+            <TextBlock
+                Width="40"
+                Height="20"
+                Margin="10,0,0,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Text="{Binding PortCurrent, StringFormat='{}{0} A', ElementName=PWMPortControlRoot}"
+                Visibility="{Binding PortState, ElementName=PWMPortControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}" />
+            <TextBlock
+                Width="40"
+                Height="20"
+                Margin="10,0,0,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Visibility="{Binding PortState, ElementName=PWMPortControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource DutyCycleToPercentageConverter}">
+                        <Binding ElementName="PWMPortControlRoot" Path="PortValue" />
+                        <Binding ElementName="PWMPortControlRoot" Path="PortDutyCycle" />
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+            <ninactrl:IntStepperControl
+                Width="100"
+                Height="20"
+                Margin="5,0,0,0"
+                MaxValue="{Binding PortDutyCycle, ElementName=PWMPortControlRoot}"
+                MinValue="0"
+                StepSize="1"
+                Visibility="{Binding PortState, ElementName=PWMPortControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}"
+                Value="{Binding PortAdjValue, ElementName=PWMPortControlRoot}" />
+            <Button
+                MinWidth="40"
+                Margin="10,0,0,0"
+                Click="SetButton_Click"
+                Visibility="{Binding PortState, ElementName=PWMPortControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Set" />
+            </Button>
+        </StackPanel>
+    </Grid>
+</UserControl>
