@@ -4,6 +4,9 @@ using System;
 namespace NINA.PINS.Equipment {
 
     public class PowerBoxPort : BaseINPC {
+        private readonly bool _readOnly;
+        public bool ReadOnly => _readOnly;
+
         private readonly int _index;
         public int Index => _index;
 
@@ -52,8 +55,16 @@ namespace NINA.PINS.Equipment {
         private bool _overcurrent = false;
         public bool Overcurrent => _overcurrent;
 
-        internal PowerBoxPort(int index) {
+        internal PowerBoxPort(int index)
+        {
             _index = index;
+            _readOnly = false;
+        }
+        
+        internal PowerBoxPort(int index, bool readOnly)
+        {
+            _index = index;
+            _readOnly = readOnly;
         }
 
         internal virtual void UpdateFromStatus(float voltage, float current, int overcurrent) {
@@ -77,7 +88,8 @@ namespace NINA.PINS.Equipment {
 
     public class PowerBoxDewPort : PowerBoxPort {
 
-        internal PowerBoxDewPort(int index) : base(index) {
+        internal PowerBoxDewPort(int index) : base(index)
+        {
         }
 
         private bool _autoMode = true;
@@ -153,7 +165,8 @@ namespace NINA.PINS.Equipment {
 
     public class PowerBoxBuckPort : PowerBoxPort {
 
-        internal PowerBoxBuckPort(int index) : base(index) {
+        internal PowerBoxBuckPort(int index) : base(index)
+        {
         }
 
         private double _power = double.NaN;
@@ -209,7 +222,8 @@ namespace NINA.PINS.Equipment {
 
     public class PowerBoxPWMPort : PowerBoxPort {
 
-        internal PowerBoxPWMPort(int index) : base(index) {
+        internal PowerBoxPWMPort(int index) : base(index)
+        {
         }
 
         private int _power = 0;

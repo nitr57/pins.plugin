@@ -34,7 +34,7 @@ namespace NINA.PINS.Drivers
             Switches = new AsyncObservableCollection<ISwitch>();
             _powerSupply = new PowerBoxPowerSupply();
             _powerPorts = new PowerBoxPorts();
-            _usbPorts = new PowerBoxPorts();
+            _usbPorts = new PowerBoxUSBPorts();
             _dewPorts = new PowerBoxDewPorts();
             _buckPorts = new PowerBoxBuckPorts();
             _pwmPorts = new PowerBoxPWMPorts();
@@ -121,7 +121,7 @@ namespace NINA.PINS.Drivers
         private Task pollingTask;
         private PowerBoxPowerSupply _powerSupply;
         private PowerBoxPorts _powerPorts;
-        private PowerBoxPorts _usbPorts;
+        private PowerBoxUSBPorts _usbPorts;
         private PowerBoxDewPorts _dewPorts;
         private PowerBoxBuckPorts _buckPorts;
         private PowerBoxPWMPorts _pwmPorts;
@@ -175,6 +175,12 @@ namespace NINA.PINS.Drivers
                         _updateRate = value;
                         RaisePropertyChanged();
                     }
+                    else
+                    {
+                        var errorMsg = $"Failed to set update rate to {value}. The device rejected this configuration value.";
+                        Logger.Error(errorMsg);
+                        Notification.ShowError(errorMsg);
+                    }
                 }
             }
         }
@@ -209,7 +215,9 @@ namespace NINA.PINS.Drivers
                     }
                     else
                     {
-                        Notification.ShowError("Failed to set environment update rate.");
+                        var errorMsg = $"Failed to set environment update rate to {value}. The device rejected this configuration value.";
+                        Logger.Error(errorMsg);
+                        Notification.ShowError(errorMsg);
                     }
                 }
             }
@@ -235,6 +243,12 @@ namespace NINA.PINS.Drivers
                         _temperatureOffset = value;
                         RaisePropertyChanged();
                     }
+                    else
+                    {
+                        var errorMsg = $"Failed to set temperature offset to {value}. The device rejected this configuration value.";
+                        Logger.Error(errorMsg);
+                        Notification.ShowError(errorMsg);
+                    }
                 }
             }
         }
@@ -256,6 +270,12 @@ namespace NINA.PINS.Drivers
                         _humidityOffset = value;
                         RaisePropertyChanged();
                     }
+                    else
+                    {
+                        var errorMsg = $"Failed to set humidity offset to {value}. The device rejected this configuration value.";
+                        Logger.Error(errorMsg);
+                        Notification.ShowError(errorMsg);
+                    }
                 }
             }
         }
@@ -266,7 +286,7 @@ namespace NINA.PINS.Drivers
 
         public PowerBoxPorts PowerPorts => _powerPorts;
 
-        public PowerBoxPorts USBPorts => _usbPorts;
+        public PowerBoxUSBPorts USBPorts => _usbPorts;
 
         public PowerBoxDewPorts DewPorts => _dewPorts;
 
@@ -632,6 +652,7 @@ namespace NINA.PINS.Drivers
                         }
 
                         // Update 5V current
+                        _supply5A = 0.0;
                         foreach (var port in USBPorts.Ports)
                         {
                             _supply5A += port.Current;
@@ -1779,7 +1800,8 @@ namespace NINA.PINS.Drivers
 
         private async Task WiFiConnect(PowerBoxSDK.PB_WIFI_MODE mode)
         {
-            string ssid = mode == PowerBoxSDK.PB_WIFI_MODE.PB_WIFI_MODE_CLIENT ? SelectedWiFiNetwork?.SSID : WiFiSSID;
+            // Use WiFiSSID for both client and AP modes (can be set via API or UI)
+            string ssid = WiFiSSID;
             if (ssid == string.Empty)
             {
                 Notification.ShowError(string.Format("SSID empty", RuntimeInformation.OSDescription));

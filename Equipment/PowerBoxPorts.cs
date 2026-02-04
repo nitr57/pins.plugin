@@ -112,7 +112,14 @@ namespace NINA.PINS.Equipment
     // Backwards compatibility aliases
     public class PowerBoxPorts : PowerBoxPorts<PowerBoxPort>
     {
-        public PowerBoxPorts() : base(index => new PowerBoxPort(index), PowerBoxSDK.PB_NUM_POWER_PORTS)
+        public PowerBoxPorts() : base(index => new PowerBoxPort(index, index == 0), PowerBoxSDK.PB_NUM_POWER_PORTS)
+        {
+        }
+    }
+
+    public class PowerBoxUSBPorts : PowerBoxPorts<PowerBoxPort>
+    {
+        public PowerBoxUSBPorts() : base(index => new PowerBoxPort(index), PowerBoxSDK.PB_NUM_USB_PORTS)
         {
         }
     }
