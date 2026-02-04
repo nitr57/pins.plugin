@@ -18,11 +18,12 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
-namespace NINA.PINS.Drivers {
-
-    public class PowerBoxDriver : BaseINPC, ISwitchHub, IDisposable {
-
-        public PowerBoxDriver(int uniqueId, string serial) {
+namespace NINA.PINS.Drivers
+{
+    public class PowerBoxDriver : BaseINPC, ISwitchHub, IDisposable
+    {
+        public PowerBoxDriver(int uniqueId, string serial)
+        {
             _configLock = new object();
 
             Id = serial;
@@ -63,12 +64,16 @@ namespace NINA.PINS.Drivers {
 
         private bool _isWiFiSurveyRunning;
 
-        public bool IsWiFiSurveyRunning {
+        public bool IsWiFiSurveyRunning
+        {
             get => _isWiFiSurveyRunning;
-            set {
-                if (SetProperty(ref _isWiFiSurveyRunning, value)) {
+            set
+            {
+                if (SetProperty(ref _isWiFiSurveyRunning, value))
+                {
                     // Ensure this runs on the UI thread
-                    Application.Current.Dispatcher.Invoke(() => {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
                         ((AsyncRelayCommand)WiFiSurveyCommand).NotifyCanExecuteChanged();
                     });
                 }
@@ -77,12 +82,16 @@ namespace NINA.PINS.Drivers {
 
         private bool _isWiFiConnecting;
 
-        public bool IsWiFiConnecting {
+        public bool IsWiFiConnecting
+        {
             get => _isWiFiConnecting;
-            set {
-                if (SetProperty(ref _isWiFiConnecting, value)) {
+            set
+            {
+                if (SetProperty(ref _isWiFiConnecting, value))
+                {
                     // Ensure this runs on the UI thread
-                    Application.Current.Dispatcher.Invoke(() => {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
                         ((AsyncRelayCommand)WiFiClientCommand).NotifyCanExecuteChanged();
                         ((AsyncRelayCommand)WiFiHotspotCommand).NotifyCanExecuteChanged();
                     });
@@ -92,10 +101,13 @@ namespace NINA.PINS.Drivers {
 
         private WiFi _selectedWiFiNetwork;
 
-        public WiFi SelectedWiFiNetwork {
+        public WiFi SelectedWiFiNetwork
+        {
             get => _selectedWiFiNetwork;
-            set {
-                if (_selectedWiFiNetwork != value) {
+            set
+            {
+                if (_selectedWiFiNetwork != value)
+                {
                     _selectedWiFiNetwork = value;
                     RaisePropertyChanged();
                 }
@@ -148,14 +160,18 @@ namespace NINA.PINS.Drivers {
 
         private int _updateRate = -1;
 
-        public int UpdateRate {
+        public int UpdateRate
+        {
             get => _updateRate;
-            set {
-                if (_updateRate != value) {
+            set
+            {
+                if (_updateRate != value)
+                {
                     PowerBoxSDK.PB_DEVICE_CONFIG config = new PowerBoxSDK.PB_DEVICE_CONFIG();
                     config.mask = PowerBoxSDK.MASK_PB_UPDATE_RATE;
                     config.updateRate = value;
-                    if (PowerBoxSDK.PBSetConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                    if (PowerBoxSDK.PBSetConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
                         _updateRate = value;
                         RaisePropertyChanged();
                     }
@@ -176,17 +192,23 @@ namespace NINA.PINS.Drivers {
 
         private int _envUpdateRate = -1;
 
-        public int EnvUpdateRate {
+        public int EnvUpdateRate
+        {
             get => _envUpdateRate;
-            set {
-                if (_envUpdateRate != value) {
+            set
+            {
+                if (_envUpdateRate != value)
+                {
                     PowerBoxSDK.PB_DEVICE_CONFIG config = new PowerBoxSDK.PB_DEVICE_CONFIG();
                     config.mask = PowerBoxSDK.MASK_PB_ENV_UPDATE_RATE;
                     config.envUpdateRate = value;
-                    if (PowerBoxSDK.PBSetConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                    if (PowerBoxSDK.PBSetConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
                         _envUpdateRate = value;
                         RaisePropertyChanged();
-                    } else {
+                    }
+                    else
+                    {
                         Notification.ShowError("Failed to set environment update rate.");
                     }
                 }
@@ -198,14 +220,18 @@ namespace NINA.PINS.Drivers {
 
         private double _temperatureOffset = double.NaN;
 
-        public double TemperatureOffset {
+        public double TemperatureOffset
+        {
             get => _temperatureOffset;
-            set {
-                if (_temperatureOffset != value) {
+            set
+            {
+                if (_temperatureOffset != value)
+                {
                     PowerBoxSDK.PB_DEVICE_CONFIG config = new PowerBoxSDK.PB_DEVICE_CONFIG();
                     config.mask = PowerBoxSDK.MASK_PB_TEMPERATURE_OFFSET;
                     config.temperatureOffset = Convert.ToSingle(value);
-                    if (PowerBoxSDK.PBSetConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                    if (PowerBoxSDK.PBSetConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
                         _temperatureOffset = value;
                         RaisePropertyChanged();
                     }
@@ -215,14 +241,18 @@ namespace NINA.PINS.Drivers {
 
         private double _humidityOffset = double.NaN;
 
-        public double HumidityOffset {
+        public double HumidityOffset
+        {
             get => _humidityOffset;
-            set {
-                if (_humidityOffset != value) {
+            set
+            {
+                if (_humidityOffset != value)
+                {
                     PowerBoxSDK.PB_DEVICE_CONFIG config = new PowerBoxSDK.PB_DEVICE_CONFIG();
                     config.mask = PowerBoxSDK.MASK_PB_HUMIDITY_OFFSET;
                     config.humidityOffset = Convert.ToSingle(value);
-                    if (PowerBoxSDK.PBSetConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                    if (PowerBoxSDK.PBSetConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
                         _humidityOffset = value;
                         RaisePropertyChanged();
                     }
@@ -255,45 +285,61 @@ namespace NINA.PINS.Drivers {
         private double _averageAmps = double.NaN;
         public double AverageAmps => _averageAmps;
 
-        public static IList<int> ScanDeviceIds() {
+        public static IList<int> ScanDeviceIds()
+        {
             var list = new List<int>();
             int number = 0;
             int[] ids = new int[PowerBoxSDK.PB_MAX_NUM];
-            try {
-                if (PowerBoxSDK.PBScan(out number, ids) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
-                    for (int i = 0; i < number; ++i) {
+            try
+            {
+                if (PowerBoxSDK.PBScan(out number, ids) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
+                    for (int i = 0; i < number; ++i)
+                    {
                         list.Add(ids[i]);
                     }
                 }
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"{ex.Message}");
             }
             return list;
         }
 
-        public async Task<bool> Connect(CancellationToken token) {
-            if (PowerBoxSDK.PBOpen(deviceId) != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+        public async Task<bool> Connect(CancellationToken token)
+        {
+            if (PowerBoxSDK.PBOpen(deviceId) != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+            {
                 Connected = false;
                 return Connected;
             }
 
             // Try get SDK version
-            try {
+            try
+            {
                 var ver = new StringBuilder(PowerBoxSDK.PB_VERSION_LEN);
-                if (PowerBoxSDK.PBGetSDKVersion(ver, ver.Capacity) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBGetSDKVersion(ver, ver.Capacity) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     DriverVersion = ver.ToString();
-                } else {
+                }
+                else
+                {
                     DriverVersion = "unknown";
                 }
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"{ex.Message}");
                 DriverVersion = "error";
             }
 
             // Try get Device version
-            try {
+            try
+            {
                 PowerBoxSDK.PB_VERSION version = new PowerBoxSDK.PB_VERSION();
-                if (PowerBoxSDK.PBGetVersion(deviceId, out version) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBGetVersion(deviceId, out version) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     // UUID
                     _uniqueId = version.uuid;
 
@@ -305,115 +351,160 @@ namespace NINA.PINS.Drivers {
 
                     OnPropertyChanged(nameof(UniqueId));
                 }
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"{ex.Message}");
                 DriverVersion = "error";
             }
 
             // Fetch initial configuration
             _isHardwareUpdate.Value = true;
-            try {
+            try
+            {
                 // Fetch initial device configuration
-                try {
+                try
+                {
                     PowerBoxSDK.PB_DEVICE_CONFIG config = new PowerBoxSDK.PB_DEVICE_CONFIG();
-                    if (PowerBoxSDK.PBGetConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                    if (PowerBoxSDK.PBGetConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
                         UpdateFromDeviceConfig(config);
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex)
+                {
                     Notification.ShowError($"{ex.Message}");
                 }
 
                 // Fetch initial power port configuration
-                try {
+                try
+                {
                     PowerBoxSDK.PB_POWER_PORT_CONFIG config = new PowerBoxSDK.PB_POWER_PORT_CONFIG();
-                    for (uint i = 0; i < PowerBoxSDK.PB_NUM_POWER_PORTS; ++i) {
+                    for (uint i = 0; i < PowerBoxSDK.PB_NUM_POWER_PORTS; ++i)
+                    {
                         config.index = i;
-                        if (PowerBoxSDK.PBGetPowerPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                        if (PowerBoxSDK.PBGetPowerPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                        {
                             _powerPorts.UpdateFromConfig(config);
                         }
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex)
+                {
                     Notification.ShowError($"{ex.Message}");
                 }
 
                 // Fetch initial USB port configuration
-                try {
+                try
+                {
                     PowerBoxSDK.PB_USB_PORT_CONFIG config = new PowerBoxSDK.PB_USB_PORT_CONFIG();
-                    for (uint i = 0; i < PowerBoxSDK.PB_NUM_USB_PORTS; ++i) {
+                    for (uint i = 0; i < PowerBoxSDK.PB_NUM_USB_PORTS; ++i)
+                    {
                         config.index = i;
-                        if (PowerBoxSDK.PBGetUSBPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                        if (PowerBoxSDK.PBGetUSBPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                        {
                             _usbPorts.UpdateFromConfig(config);
                         }
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex)
+                {
                     Notification.ShowError($"{ex.Message}");
                 }
 
                 // Fetch initial Dew port configuration
-                try {
+                try
+                {
                     PowerBoxSDK.PB_DEW_PORT_CONFIG config = new PowerBoxSDK.PB_DEW_PORT_CONFIG();
-                    for (uint i = 0; i < PowerBoxSDK.PB_NUM_DEW_PORTS; ++i) {
+                    for (uint i = 0; i < PowerBoxSDK.PB_NUM_DEW_PORTS; ++i)
+                    {
                         config.index = i;
-                        if (PowerBoxSDK.PBGetDewPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                        if (PowerBoxSDK.PBGetDewPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                        {
                             _dewPorts.UpdateFromConfig(config);
                         }
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex)
+                {
                     Notification.ShowError($"{ex.Message}");
                 }
 
                 // Fetch initial Buck port configuration
-                try {
+                try
+                {
                     PowerBoxSDK.PB_BUCK_PORT_CONFIG config = new PowerBoxSDK.PB_BUCK_PORT_CONFIG();
-                    if (PowerBoxSDK.PBGetBuckPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                    if (PowerBoxSDK.PBGetBuckPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
                         _buckPorts.UpdateFromConfig(config);
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex)
+                {
                     Notification.ShowError($"{ex.Message}");
                 }
 
                 // Fetch initial PWM port configuration
-                try {
+                try
+                {
                     PowerBoxSDK.PB_PWM_PORT_CONFIG config = new PowerBoxSDK.PB_PWM_PORT_CONFIG();
-                    if (PowerBoxSDK.PBGetPWMPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                    if (PowerBoxSDK.PBGetPWMPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
                         _pwmPorts.UpdateFromConfig(config);
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex)
+                {
                     Notification.ShowError($"{ex.Message}");
                 }
 
                 // Fetch initial WiFi configuration
-                try {
+                try
+                {
                     PowerBoxSDK.PB_WIFI_CONFIG config = new PowerBoxSDK.PB_WIFI_CONFIG();
-                    if (PowerBoxSDK.PBGetWiFiConfig(deviceId, out config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                    if (PowerBoxSDK.PBGetWiFiConfig(deviceId, out config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
                         _wifi.UpdateFromConfig(config);
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex)
+                {
                     Notification.ShowError($"{ex.Message}");
                 }
-            } finally {
+            }
+            finally
+            {
                 _isHardwareUpdate.Value = false;
             }
 
             // start polling after a short delay to allow device to stabilize
             pollingCts = CancellationTokenSource.CreateLinkedTokenSource(token);
-            pollingTask = Task.Run(async () => {
-                while (!pollingCts.Token.IsCancellationRequested) {
+            pollingTask = Task.Run(async () =>
+            {
+                while (!pollingCts.Token.IsCancellationRequested)
+                {
                     _isHardwareUpdate.Value = true;
-                    try {
+                    try
+                    {
                         // Poll device status
-                        try {
+                        try
+                        {
                             PowerBoxSDK.PB_DEVICE_STATUS status;
-                            if (PowerBoxSDK.PBGetStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                            if (PowerBoxSDK.PBGetStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                            {
                                 UpdateFromDeviceStatus(status);
 
-                                if (double.IsNaN(_temperature) || status.extSensor != 0) {
+                                if (double.IsNaN(_temperature) || status.extSensor != 0)
+                                {
                                     // Try to fetch from connected WeatherData equipment (MeteoStation)
-                                    try {
+                                    try
+                                    {
                                         var mediator = PINS.WeatherDataMediator;
-                                        if (mediator?.GetInfo().Connected == true) {
+                                        if (mediator?.GetInfo().Connected == true)
+                                        {
                                             var weatherData = mediator.GetInfo();
-                                            if (!double.IsNaN(weatherData.Temperature)) {
+                                            if (!double.IsNaN(weatherData.Temperature))
+                                            {
                                                 _temperature = weatherData.Temperature;
                                                 _humidity = weatherData.Humidity;
                                                 _dewPoint = weatherData.DewPoint;
@@ -429,87 +520,120 @@ namespace NINA.PINS.Drivers {
                                                 PowerBoxSDK.PBSetConfig(deviceId, ref config);
                                             }
                                         }
-                                    } catch (Exception meteoEx) {
+                                    }
+                                    catch (Exception meteoEx)
+                                    {
                                         Logger.Trace($"Unable to fetch WeatherData: {meteoEx.Message}");
                                     }
                                 }
                             }
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             Notification.ShowError($"{ex.Message}");
                         }
 
                         // Poll power supply status
-                        try {
+                        try
+                        {
                             PowerBoxSDK.PB_SUPPLY_STATUS status;
-                            if (PowerBoxSDK.PBGetSupplyStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                            if (PowerBoxSDK.PBGetSupplyStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                            {
                                 _powerSupply.UpdateFromStatus(status);
                             }
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             Notification.ShowError($"{ex.Message}");
                         }
 
                         // Poll power port status
-                        try {
+                        try
+                        {
                             PowerBoxSDK.PB_POWER_PORT_STATUS status;
-                            if (PowerBoxSDK.PBGetPowerPortStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                            if (PowerBoxSDK.PBGetPowerPortStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                            {
                                 _powerPorts.UpdateFromStatus(status);
                             }
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             Notification.ShowError($"{ex.Message}");
                         }
 
                         // Poll USB port status
-                        try {
+                        try
+                        {
                             PowerBoxSDK.PB_USB_PORT_STATUS status;
-                            if (PowerBoxSDK.PBGetUSBPortStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                            if (PowerBoxSDK.PBGetUSBPortStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                            {
                                 _usbPorts.UpdateFromStatus(status);
                             }
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             Notification.ShowError($"{ex.Message}");
                         }
 
                         // Poll Dew port status
-                        try {
+                        try
+                        {
                             PowerBoxSDK.PB_DEW_PORT_STATUS status;
-                            if (PowerBoxSDK.PBGetDewPortStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                            if (PowerBoxSDK.PBGetDewPortStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                            {
                                 _dewPorts.UpdateFromStatus(status);
                             }
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             Notification.ShowError($"{ex.Message}");
                         }
 
                         // Poll Buck port status
-                        try {
+                        try
+                        {
                             PowerBoxSDK.PB_BUCK_PORT_STATUS status;
-                            if (PowerBoxSDK.PBGetBuckPortStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                            if (PowerBoxSDK.PBGetBuckPortStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                            {
                                 _buckPorts.UpdateFromStatus(status);
                             }
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             Notification.ShowError($"{ex.Message}");
                         }
 
                         // Poll PWM port status
-                        try {
+                        try
+                        {
                             PowerBoxSDK.PB_PWM_PORT_STATUS status;
-                            if (PowerBoxSDK.PBGetPWMPortStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                            if (PowerBoxSDK.PBGetPWMPortStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                            {
                                 _pwmPorts.UpdateFromStatus(status);
                             }
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             Notification.ShowError($"{ex.Message}");
                         }
 
                         // Poll WiFi status
-                        try {
+                        try
+                        {
                             PowerBoxSDK.PB_WIFI_STATUS status;
-                            if (PowerBoxSDK.PBGetWiFiStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                            if (PowerBoxSDK.PBGetWiFiStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                            {
                                 _wifi.UpdateFromStatus(status);
                             }
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             Notification.ShowError($"{ex.Message}");
                         }
 
                         // Update 5V current
-                        foreach (var port in USBPorts.Ports) {
+                        foreach (var port in USBPorts.Ports)
+                        {
                             _supply5A += port.Current;
                         }
                         _supply5A = Math.Round(_supply5A, 2);
@@ -517,20 +641,26 @@ namespace NINA.PINS.Drivers {
 
                         OnPropertyChanged(nameof(Supply5A));
                         OnPropertyChanged(nameof(Supply5W));
-                    } finally {
+                    }
+                    finally
+                    {
                         _isHardwareUpdate.Value = false;
                     }
 
-                    try {
+                    try
+                    {
                         await Task.Delay(1000, pollingCts.Token).ConfigureAwait(false);
-                    } catch (TaskCanceledException) {
+                    }
+                    catch (TaskCanceledException)
+                    {
                         break;
                     }
                 }
             }, pollingCts.Token);
 
             // We need to wait for the status updates to arrive, so we simply loop a bit
-            while ((PWMPorts.Ports[0].Resolution == 0 || DewPorts.Ports[0].Resolution == 0 || BuckPorts.Ports[0].MaxVoltage < 1.0) && !token.IsCancellationRequested) {
+            while ((PWMPorts.Ports[0].Resolution == 0 || DewPorts.Ports[0].Resolution == 0 || BuckPorts.Ports[0].MaxVoltage < 1.0) && !token.IsCancellationRequested)
+            {
                 Thread.Sleep(100);
             }
 
@@ -545,29 +675,39 @@ namespace NINA.PINS.Drivers {
             return Connected;
         }
 
-        public void Disconnect() {
-            try {
+        public void Disconnect()
+        {
+            try
+            {
                 pollingCts?.Cancel();
-                try {
+                try
+                {
                     pollingTask?.Wait(1000);
-                } catch { }
+                }
+                catch { }
 
                 PowerBoxSDK.PBClose(deviceId);
-            } catch { } finally {
+            }
+            catch { }
+            finally
+            {
                 // Unregister this PowerBox instance
-                if (PINS.ConnectedPowerBox == this) {
+                if (PINS.ConnectedPowerBox == this)
+                {
                     PINS.ConnectedPowerBox = null;
                 }
                 Connected = false;
             }
         }
 
-        public void Dispose() {
+        public void Dispose()
+        {
             Disconnect();
             pollingCts?.Dispose();
         }
 
-        private void ScanForSwitches() {
+        private void ScanForSwitches()
+        {
             Logger.Trace("Scanning for switches...");
 
             Switches.Add(new PowerBoxSwitch(() => "12V rail", () => "Supply [V]", () => _powerSupply.Supply12V, 0));
@@ -585,10 +725,14 @@ namespace NINA.PINS.Drivers {
 
             // Power hub
             Logger.Trace("Configuring power hub switches...");
-            foreach (var port in PowerPorts.Ports) {
-                if (port.Index == 0) {
+            foreach (var port in PowerPorts.Ports)
+            {
+                if (port.Index == 0)
+                {
                     Switches.Add(new PowerBoxSwitch(() => port.Name, () => "12V #1: always on (Current [A])", () => port.Current, switchId));
-                } else {
+                }
+                else
+                {
                     Switches.Add(new PowerBoxWritableSwitch(
                         () => port.Name,
                         () => $"12V #{port.Index + 1}: {(port.Enabled ? port.Current : 0)}A",
@@ -601,7 +745,8 @@ namespace NINA.PINS.Drivers {
 
             // USB hub
             Logger.Trace("Configuring USB hub switches...");
-            foreach (var port in USBPorts.Ports) {
+            foreach (var port in USBPorts.Ports)
+            {
                 Switches.Add(new PowerBoxWritableSwitch(
                     () => port.Name,
                     () => $"USB #{port.Index + 1}: {(port.Enabled ? port.Current : 0)}A",
@@ -614,7 +759,8 @@ namespace NINA.PINS.Drivers {
             // Dew hub - auto dew threshold
             Logger.Trace("Configuring Dew hub switches...");
 
-            foreach (var port in DewPorts.Ports) {
+            foreach (var port in DewPorts.Ports)
+            {
                 Switches.Add(new PowerBoxWritableSwitch(
                     () => $"{port.Name} auto dew threshold",
                     () => "Set threshold [°C]",
@@ -625,7 +771,8 @@ namespace NINA.PINS.Drivers {
             }
 
             // Dew hub - auto mode
-            foreach (var port in DewPorts.Ports) {
+            foreach (var port in DewPorts.Ports)
+            {
                 Switches.Add(new PowerBoxWritableSwitch(
                     () => $"{port.Name} auto mode",
                     () => $"Probe: {(port.Probe == -127.0f ? "--" : port.Probe)}°C",
@@ -636,22 +783,26 @@ namespace NINA.PINS.Drivers {
             }
 
             // Dew hub
-            foreach (var port in DewPorts.Ports) {
+            foreach (var port in DewPorts.Ports)
+            {
                 Switches.Add(new PowerBoxWritableSwitch(
                     () => port.Name,
                     () => $"Dew #{port.Index + 1}: {(port.Enabled ? Math.Round(port.Power * 100.0 / port.Resolution, 1) : 0)}% ({(port.Enabled ? Math.Round(port.Current, 2) : 0)}A)",
                     () => port.Enabled ? port.Power : 0,
-                    (value) => {
+                    (value) =>
+                    {
                         // On auto mode, do nothing
                         if (port.AutoMode) return;
 
                         // Turn on, if duty cycle > 0 and state is off
-                        if (value > 0 && port.Enabled == false) {
+                        if (value > 0 && port.Enabled == false)
+                        {
                             port.Enabled = true;
                         }
 
                         // Turn off, if duty cycle is 0 and state is on
-                        if (value == 0 && port.Enabled == true) {
+                        if (value == 0 && port.Enabled == true)
+                        {
                             port.Enabled = false;
                         }
 
@@ -670,19 +821,23 @@ namespace NINA.PINS.Drivers {
             Switches.Add(new PowerBoxWritableSwitch(
                             () => buckPort.Name,
                             () => $"Buck converter: {(buckPort.Enabled ? Math.Round(buckPort.Power, 2) : 0)}V ({(buckPort.Enabled ? Math.Round(buckPort.Current, 2) : 0)}A)",
-                            () => {
+                            () =>
+                            {
                                 return buckPort.Enabled == false ? 0 : Math.Round(buckPort.SetVoltage, 2);
                             },
-                            (value) => {
+                            (value) =>
+                            {
                                 value = value < 1.0 ? 0.0 : value;
 
                                 // Turn on, if voltage >= 1 and current state is off
-                                if (value >= 1.0 && buckPort.Enabled == false) {
+                                if (value >= 1.0 && buckPort.Enabled == false)
+                                {
                                     buckPort.Enabled = true;
                                 }
 
                                 // Turn off, if voltage is < vmin and current state is on
-                                if (value < buckPort.MinVoltage && buckPort.Enabled == true) {
+                                if (value < buckPort.MinVoltage && buckPort.Enabled == true)
+                                {
                                     buckPort.Enabled = false;
                                 }
 
@@ -700,20 +855,25 @@ namespace NINA.PINS.Drivers {
             Switches.Add(new PowerBoxWritableSwitch(
                 () => pwmPort.Name,
                 () => $"PWM port: {(pwmPort.Enabled ? Math.Round(pwmPort.Power * 100.0 / pwmPort.Resolution, 1) : 0)}% ({(pwmPort.Enabled ? Math.Round(pwmPort.Current, 2) : 0)}A)",
-                () => {
-                    if (pwmPort.Enabled == false) {
+                () =>
+                {
+                    if (pwmPort.Enabled == false)
+                    {
                         return 0;
                     }
                     return pwmPort.Power;
                 },
-                (value) => {
+                (value) =>
+                {
                     // Turn on, if duty cycle > 0 and current state is off
-                    if (value > 0 && pwmPort.Enabled == false) {
+                    if (value > 0 && pwmPort.Enabled == false)
+                    {
                         pwmPort.Enabled = true;
                     }
 
                     // Turn off, if duty cycle is 0 and current state is on
-                    if (value == 0 && pwmPort.Enabled == true) {
+                    if (value == 0 && pwmPort.Enabled == true)
+                    {
                         pwmPort.Enabled = false;
                     }
 
@@ -729,74 +889,94 @@ namespace NINA.PINS.Drivers {
             Logger.Trace($"Total switches configured: {Switches.Count}");
         }
 
-        private void SubscribeToPortChanges() {
-            foreach (var port in PowerPorts.Ports) {
-                port.PropertyChanged += (s, e) => {
+        private void SubscribeToPortChanges()
+        {
+            foreach (var port in PowerPorts.Ports)
+            {
+                port.PropertyChanged += (s, e) =>
+                {
                     Logger.Trace($"PowerPort {port.Index} property changed: {e.PropertyName}");
-                    if (_isHardwareUpdate.Value) {
+                    if (_isHardwareUpdate.Value)
+                    {
                         Logger.Trace($"Ignoring change during hardware update");
                         return;
                     }
-                    if (e.PropertyName == nameof(PowerBoxPort.Name)) {
+                    if (e.PropertyName == nameof(PowerBoxPort.Name))
+                    {
                         Logger.Trace($"PowerPort {port.Index} name changed to '{port.Name}'. Persisting...");
                         PersistPortNames();
                         return;
                     }
-                    uint mask = e.PropertyName switch {
+                    uint mask = e.PropertyName switch
+                    {
                         nameof(PowerBoxPort.Enabled) => PowerBoxSDK.MASK_PORT_ENABLE,
                         nameof(PowerBoxPort.BootState) => PowerBoxSDK.MASK_PORT_BOOT_STATE,
                         _ => 0
                     };
-                    if (mask != 0) {
+                    if (mask != 0)
+                    {
                         Logger.Trace($"PowerPort {port.Index} property {e.PropertyName} changed. Persisting...");
-                        if (!SetPowerPortConfig(port, mask)) {
+                        if (!SetPowerPortConfig(port, mask))
+                        {
                             RefreshPowerPortConfig(port.Index);
                         }
                     }
                 };
             }
 
-            foreach (var port in USBPorts.Ports) {
-                port.PropertyChanged += (s, e) => {
+            foreach (var port in USBPorts.Ports)
+            {
+                port.PropertyChanged += (s, e) =>
+                {
                     if (_isHardwareUpdate.Value) return;
-                    if (e.PropertyName == nameof(PowerBoxPort.Name)) {
+                    if (e.PropertyName == nameof(PowerBoxPort.Name))
+                    {
                         Logger.Trace($"USBPort {port.Index} name changed. Persisting...");
                         PersistPortNames();
                         return;
                     }
-                    uint mask = e.PropertyName switch {
+                    uint mask = e.PropertyName switch
+                    {
                         nameof(PowerBoxPort.Enabled) => PowerBoxSDK.MASK_PORT_ENABLE,
                         nameof(PowerBoxPort.BootState) => PowerBoxSDK.MASK_PORT_BOOT_STATE,
                         _ => 0
                     };
-                    if (mask != 0) {
+                    if (mask != 0)
+                    {
                         Logger.Trace($"USBPort {port.Index} property {e.PropertyName} changed. Persisting...");
-                        if (!SetUSBPortConfig(port, mask)) {
+                        if (!SetUSBPortConfig(port, mask))
+                        {
                             RefreshUSBPortConfig(port.Index);
                         }
                     }
                 };
             }
 
-            foreach (var port in DewPorts.Ports) {
-                port.PropertyChanged += (s, e) => {
+            foreach (var port in DewPorts.Ports)
+            {
+                port.PropertyChanged += (s, e) =>
+                {
                     if (_isHardwareUpdate.Value) return;
-                    if (e.PropertyName == nameof(PowerBoxPort.Name)) {
+                    if (e.PropertyName == nameof(PowerBoxPort.Name))
+                    {
                         Logger.Trace($"DewPort {port.Index} name changed. Persisting...");
                         PersistPortNames();
                         return;
                     }
                     PowerBoxDewPort dewPort = (PowerBoxDewPort)port;
-                    uint mask = e.PropertyName switch {
+                    uint mask = e.PropertyName switch
+                    {
                         nameof(PowerBoxPort.Enabled) => PowerBoxSDK.MASK_PORT_ENABLE,
                         nameof(PowerBoxDewPort.AutoMode) => PowerBoxSDK.MASK_PORT_AUTO_DEW_MODE,
                         nameof(PowerBoxDewPort.AutoThreshold) => PowerBoxSDK.MASK_PORT_AUTO_DEW_THRESHOLD,
                         nameof(PowerBoxDewPort.SetPower) => PowerBoxSDK.MASK_PORT_POWER,
                         _ => 0
                     };
-                    if (mask != 0) {
+                    if (mask != 0)
+                    {
                         Logger.Trace($"DewPort {port.Index} property {e.PropertyName} changed. Persisting...");
-                        if (!SetDewPortConfig(dewPort, mask)) {
+                        if (!SetDewPortConfig(dewPort, mask))
+                        {
                             RefreshDewPortConfig(port.Index);
                         }
                     }
@@ -804,53 +984,66 @@ namespace NINA.PINS.Drivers {
             }
 
             var buck = BuckPorts.Ports[0];
-            buck.PropertyChanged += (s, e) => {
+            buck.PropertyChanged += (s, e) =>
+            {
                 if (_isHardwareUpdate.Value) return;
-                if (e.PropertyName == nameof(PowerBoxPort.Name)) {
+                if (e.PropertyName == nameof(PowerBoxPort.Name))
+                {
                     Logger.Trace("BuckPort name changed. Persisting...");
                     PersistPortNames();
                     return;
                 }
-                uint mask = e.PropertyName switch {
+                uint mask = e.PropertyName switch
+                {
                     nameof(PowerBoxPort.Enabled) => PowerBoxSDK.MASK_PORT_ENABLE,
                     nameof(PowerBoxBuckPort.SetVoltage) => PowerBoxSDK.MASK_PORT_VOLTAGE,
                     _ => 0
                 };
-                if (mask != 0) {
+                if (mask != 0)
+                {
                     Logger.Trace($"BuckPort property {e.PropertyName} changed. Persisting...");
-                    if (!SetBuckPortConfig(buck, mask)) {
+                    if (!SetBuckPortConfig(buck, mask))
+                    {
                         RefreshBuckPortConfig();
                     }
                 }
             };
 
             var pwm = PWMPorts.Ports[0];
-            pwm.PropertyChanged += (s, e) => {
+            pwm.PropertyChanged += (s, e) =>
+            {
                 if (_isHardwareUpdate.Value) return;
-                if (e.PropertyName == nameof(PowerBoxPort.Name)) {
+                if (e.PropertyName == nameof(PowerBoxPort.Name))
+                {
                     Logger.Trace("PWMPort name changed. Persisting...");
                     PersistPortNames();
                     return;
                 }
-                uint mask = e.PropertyName switch {
+                uint mask = e.PropertyName switch
+                {
                     nameof(PowerBoxPort.Enabled) => PowerBoxSDK.MASK_PORT_ENABLE,
                     nameof(PowerBoxPWMPort.SetPower) => PowerBoxSDK.MASK_PORT_POWER,
                     _ => 0
                 };
-                if (mask != 0) {
+                if (mask != 0)
+                {
                     Logger.Trace($"PWMPort property {e.PropertyName} changed. Persisting...");
-                    if (!SetPWMPortConfig(pwm, mask)) {
+                    if (!SetPWMPortConfig(pwm, mask))
+                    {
                         RefreshPWMPortConfig();
                     }
                 }
             };
         }
 
-        private JObject Load(string uuid) {
-            lock (_configLock) {
+        private JObject Load(string uuid)
+        {
+            lock (_configLock)
+            {
                 JObject config = [];
 
-                try {
+                try
+                {
                     // Open for reading
                     using var fs = new FileStream(Path.Combine(CoreUtil.APPLICATIONTEMPPATH, "Config", "powerbox.cfg"), FileMode.Open, FileAccess.Read, FileShare.None);
                     using var reader = new StreamReader(fs);
@@ -859,10 +1052,13 @@ namespace NINA.PINS.Drivers {
                     // Deserialize
                     dynamic jsonObj = JsonConvert.DeserializeObject(jsonConfig) ?? new JObject();
 
-                    if (jsonObj.ContainsKey(uuid)) {
+                    if (jsonObj.ContainsKey(uuid))
+                    {
                         return jsonObj[uuid] as JObject;
                     }
-                } catch (FileNotFoundException) {
+                }
+                catch (FileNotFoundException)
+                {
                     // File does not exist
                     return null;
                 }
@@ -871,165 +1067,210 @@ namespace NINA.PINS.Drivers {
             return null;
         }
 
-        private void Store(string uuid, JObject config) {
-            lock (_configLock) {
+        private void Store(string uuid, JObject config)
+        {
+            lock (_configLock)
+            {
                 string configPath = Path.Combine(CoreUtil.APPLICATIONTEMPPATH, "Config", "powerbox.cfg");
 
                 // Ensure directory exists
                 Directory.CreateDirectory(Path.GetDirectoryName(configPath));
 
                 // Create file if it doesn't exist
-                if (!File.Exists(configPath)) {
+                if (!File.Exists(configPath))
+                {
                     File.WriteAllText(configPath, "{}");
                 }
 
                 // Read existing JSON
                 dynamic jsonObj;
-                try {
-                    using (var reader = new StreamReader(configPath)) {
+                try
+                {
+                    using (var reader = new StreamReader(configPath))
+                    {
                         var jsonConfig = reader.ReadToEnd();
                         jsonObj = JsonConvert.DeserializeObject(jsonConfig) ?? new JObject();
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex)
+                {
                     Notification.ShowError($"Error reading config file: {ex.Message}");
                     return;
                 }
 
                 // Modify the JSON object
-                if (jsonObj.ContainsKey(uuid)) {
+                if (jsonObj.ContainsKey(uuid))
+                {
                     jsonObj.Remove(uuid);
                 }
 
                 jsonObj[uuid] = config;
 
                 // Serialize and write back to file
-                try {
+                try
+                {
                     string updatedJson = JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
                     File.WriteAllText(configPath, updatedJson);
-                } catch (Exception ex) {
+                }
+                catch (Exception ex)
+                {
                     Notification.ShowError($"Error writing config file: {ex.Message}");
                 }
             }
         }
 
-        private void SetNames(JObject config) {
-            try {
+        private void SetNames(JObject config)
+        {
+            try
+            {
                 var hubConfig = config["Hub"] as JObject;
-                if (hubConfig != null) {
+                if (hubConfig != null)
+                {
                     var powerPortConfig = hubConfig["PowerPort"] as JObject;
-                    if (powerPortConfig != null) {
-                        foreach (var port in PowerPorts.Ports) {
+                    if (powerPortConfig != null)
+                    {
+                        foreach (var port in PowerPorts.Ports)
+                        {
                             var nameToken = powerPortConfig[$"Port{port.Index + 1}"];
-                            if (nameToken != null) {
+                            if (nameToken != null)
+                            {
                                 port.Name = nameToken.ToString();
                             }
                         }
                     }
                     var usbPortConfig = hubConfig["USBPort"] as JObject;
-                    if (usbPortConfig != null) {
-                        foreach (var port in USBPorts.Ports) {
+                    if (usbPortConfig != null)
+                    {
+                        foreach (var port in USBPorts.Ports)
+                        {
                             var nameToken = usbPortConfig[$"Port{port.Index + 1}"];
-                            if (nameToken != null) {
+                            if (nameToken != null)
+                            {
                                 port.Name = nameToken.ToString();
                             }
                         }
                     }
                     var dewPortConfig = hubConfig["DewPort"] as JObject;
-                    if (dewPortConfig != null) {
-                        foreach (var port in DewPorts.Ports) {
+                    if (dewPortConfig != null)
+                    {
+                        foreach (var port in DewPorts.Ports)
+                        {
                             var nameToken = dewPortConfig[$"Port{port.Index + 1}"];
-                            if (nameToken != null) {
+                            if (nameToken != null)
+                            {
                                 port.Name = nameToken.ToString();
                             }
                         }
                     }
                     var adjPortConfig = hubConfig["AdjPort"] as JObject;
-                    if (adjPortConfig != null) {
+                    if (adjPortConfig != null)
+                    {
                         var buckNameToken = adjPortConfig["Port1"];
-                        if (buckNameToken != null) {
+                        if (buckNameToken != null)
+                        {
                             BuckPorts.Ports[0].Name = buckNameToken.ToString();
                         }
                         var pwmNameToken = adjPortConfig["Port2"];
-                        if (pwmNameToken != null) {
+                        if (pwmNameToken != null)
+                        {
                             PWMPorts.Ports[0].Name = pwmNameToken.ToString();
                         }
                     }
                 }
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"Error setting port names from config: {ex.Message}");
             }
         }
 
-        private void PersistPortNames() {
-            try {
-                lock (_configLock) {
+        private void PersistPortNames()
+        {
+            try
+            {
+                lock (_configLock)
+                {
                     string configPath = Path.Combine(CoreUtil.APPLICATIONTEMPPATH, "Config", "powerbox.cfg");
 
                     // Ensure directory exists
                     Directory.CreateDirectory(Path.GetDirectoryName(configPath));
 
                     // Create file if it doesn't exist
-                    if (!File.Exists(configPath)) {
+                    if (!File.Exists(configPath))
+                    {
                         File.WriteAllText(configPath, "{}");
                     }
 
                     // Read existing JSON
                     dynamic jsonObj;
-                    try {
-                        using (var reader = new StreamReader(configPath)) {
+                    try
+                    {
+                        using (var reader = new StreamReader(configPath))
+                        {
                             var jsonConfig = reader.ReadToEnd();
                             jsonObj = JsonConvert.DeserializeObject(jsonConfig) ?? new JObject();
                         }
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex)
+                    {
                         Logger.Error($"Error reading config file for port names: {ex.Message}");
                         return;
                     }
 
                     // Get or create the device config
                     JObject config = jsonObj.ContainsKey(Id) ? jsonObj[Id] as JObject : GetDefaultConfig();
-                    if (config == null) {
+                    if (config == null)
+                    {
                         config = GetDefaultConfig();
                     }
 
                     var hubConfig = config["Hub"] as JObject;
-                    if (hubConfig == null) {
+                    if (hubConfig == null)
+                    {
                         hubConfig = new JObject();
                         config["Hub"] = hubConfig;
                     }
 
                     // Persist Power Port names
                     var powerPortConfig = hubConfig["PowerPort"] as JObject;
-                    if (powerPortConfig == null) {
+                    if (powerPortConfig == null)
+                    {
                         powerPortConfig = new JObject();
                         hubConfig["PowerPort"] = powerPortConfig;
                     }
-                    foreach (var port in PowerPorts.Ports) {
+                    foreach (var port in PowerPorts.Ports)
+                    {
                         powerPortConfig[$"Port{port.Index + 1}"] = port.Name;
                     }
 
                     // Persist USB Port names
                     var usbPortConfig = hubConfig["USBPort"] as JObject;
-                    if (usbPortConfig == null) {
+                    if (usbPortConfig == null)
+                    {
                         usbPortConfig = new JObject();
                         hubConfig["USBPort"] = usbPortConfig;
                     }
-                    foreach (var port in USBPorts.Ports) {
+                    foreach (var port in USBPorts.Ports)
+                    {
                         usbPortConfig[$"Port{port.Index + 1}"] = port.Name;
                     }
 
                     // Persist Dew Port names
                     var dewPortConfig = hubConfig["DewPort"] as JObject;
-                    if (dewPortConfig == null) {
+                    if (dewPortConfig == null)
+                    {
                         dewPortConfig = new JObject();
                         hubConfig["DewPort"] = dewPortConfig;
                     }
-                    foreach (var port in DewPorts.Ports) {
+                    foreach (var port in DewPorts.Ports)
+                    {
                         dewPortConfig[$"Port{port.Index + 1}"] = port.Name;
                     }
 
                     // Persist Adjustable Port names
                     var adjPortConfig = hubConfig["AdjPort"] as JObject;
-                    if (adjPortConfig == null) {
+                    if (adjPortConfig == null)
+                    {
                         adjPortConfig = new JObject();
                         hubConfig["AdjPort"] = adjPortConfig;
                     }
@@ -1037,32 +1278,42 @@ namespace NINA.PINS.Drivers {
                     adjPortConfig["Port2"] = PWMPorts.Ports[0].Name;
 
                     // Update the config in jsonObj
-                    if (jsonObj.ContainsKey(Id)) {
+                    if (jsonObj.ContainsKey(Id))
+                    {
                         jsonObj.Remove(Id);
                     }
                     jsonObj[Id] = config;
 
                     // Serialize and write back to file
-                    try {
+                    try
+                    {
                         string updatedJson = JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
                         File.WriteAllText(configPath, updatedJson);
                         Logger.Trace("Port names persisted successfully");
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex)
+                    {
                         Notification.ShowError($"Error writing config file: {ex.Message}");
                         Logger.Error($"Error writing port names to config: {ex}");
                     }
                 }
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"Error persisting port names: {ex.Message}");
                 Logger.Error($"Error persisting port names: {ex}");
             }
         }
 
-        private static JObject GetDefaultConfig() {
+        private static JObject GetDefaultConfig()
+        {
             // Return a new entry for the uuid
-            return new JObject {
-                ["Hub"] = new JObject {
-                    ["PowerPort"] = new JObject {
+            return new JObject
+            {
+                ["Hub"] = new JObject
+                {
+                    ["PowerPort"] = new JObject
+                    {
                         ["Port1"] = "12V #1",
                         ["Port2"] = "12V #2",
                         ["Port3"] = "12V #3",
@@ -1070,11 +1321,13 @@ namespace NINA.PINS.Drivers {
                         ["Port5"] = "12V #5",
                         ["Port6"] = "12V #6"
                     },
-                    ["AdjPort"] = new JObject {
+                    ["AdjPort"] = new JObject
+                    {
                         ["Port1"] = "Buck converter",
                         ["Port2"] = "PWM Port"
                     },
-                    ["USBPort"] = new JObject {
+                    ["USBPort"] = new JObject
+                    {
                         ["Port1"] = "USB3 #1",
                         ["Port2"] = "USB3 #2",
                         ["Port3"] = "USB3 #3",
@@ -1082,7 +1335,8 @@ namespace NINA.PINS.Drivers {
                         ["Port5"] = "USB2 #1",
                         ["Port6"] = "USB2 #2"
                     },
-                    ["DewPort"] = new JObject {
+                    ["DewPort"] = new JObject
+                    {
                         ["Port1"] = "Dew #1",
                         ["Port2"] = "Dew #2"
                     }
@@ -1090,46 +1344,58 @@ namespace NINA.PINS.Drivers {
             };
         }
 
-        private bool SetPowerPortConfig(PowerBoxPort port, uint mask) {
-            try {
+        private bool SetPowerPortConfig(PowerBoxPort port, uint mask)
+        {
+            try
+            {
                 PowerBoxSDK.PB_POWER_PORT_CONFIG config = new PowerBoxSDK.PB_POWER_PORT_CONFIG();
                 config.mask = mask;
                 config.index = (uint)port.Index;
                 config.enabled = port.Enabled ? 1 : 0;
                 config.bootState = port.BootState ? 1 : 0;
 
-                if (PowerBoxSDK.PBSetPowerPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBSetPowerPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     return true;
                 }
                 Notification.ShowError("Failed to set power port configuration.");
                 return false;
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"Error setting port config: {ex.Message}");
                 return false;
             }
         }
 
-        private bool SetUSBPortConfig(PowerBoxPort port, uint mask) {
-            try {
+        private bool SetUSBPortConfig(PowerBoxPort port, uint mask)
+        {
+            try
+            {
                 PowerBoxSDK.PB_USB_PORT_CONFIG config = new PowerBoxSDK.PB_USB_PORT_CONFIG();
                 config.mask = mask;
                 config.index = (uint)port.Index;
                 config.enabled = port.Enabled ? 1 : 0;
                 config.bootState = port.BootState ? 1 : 0;
 
-                if (PowerBoxSDK.PBSetUSBPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBSetUSBPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     return true;
                 }
                 Notification.ShowError("Failed to set USB port configuration.");
                 return false;
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"Error setting port config: {ex.Message}");
                 return false;
             }
         }
 
-        private bool SetDewPortConfig(PowerBoxDewPort port, uint mask) {
-            try {
+        private bool SetDewPortConfig(PowerBoxDewPort port, uint mask)
+        {
+            try
+            {
                 PowerBoxSDK.PB_DEW_PORT_CONFIG config = new PowerBoxSDK.PB_DEW_PORT_CONFIG();
                 config.mask = mask;
                 config.index = (uint)port.Index;
@@ -1138,114 +1404,158 @@ namespace NINA.PINS.Drivers {
                 config.autoMode = port.AutoMode ? 1 : 0;
                 config.power = port.SetPower;
 
-                if (PowerBoxSDK.PBSetDewPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBSetDewPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     return true;
                 }
                 Notification.ShowError("Failed to set dew port configuration.");
                 return false;
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"Error setting port config: {ex.Message}");
                 return false;
             }
         }
 
-        private bool SetBuckPortConfig(PowerBoxBuckPort port, uint mask) {
-            try {
+        private bool SetBuckPortConfig(PowerBoxBuckPort port, uint mask)
+        {
+            try
+            {
                 PowerBoxSDK.PB_BUCK_PORT_CONFIG config = new PowerBoxSDK.PB_BUCK_PORT_CONFIG();
                 config.mask = mask;
                 config.enabled = port.Enabled ? 1 : 0;
-                config.voltage = Convert.ToSingle(port.SetVoltage);
+                config.targetVoltage = Convert.ToSingle(port.SetVoltage);
 
-                if (PowerBoxSDK.PBSetBuckPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBSetBuckPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     return true;
                 }
                 Notification.ShowError("Failed to set buck port configuration.");
                 return false;
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"Error setting port config: {ex.Message}");
                 return false;
             }
         }
 
-        private bool SetPWMPortConfig(PowerBoxPWMPort port, uint mask) {
-            try {
+        private bool SetPWMPortConfig(PowerBoxPWMPort port, uint mask)
+        {
+            try
+            {
                 PowerBoxSDK.PB_PWM_PORT_CONFIG config = new PowerBoxSDK.PB_PWM_PORT_CONFIG();
                 config.mask = mask;
                 config.enabled = port.Enabled ? 1 : 0;
                 config.power = port.SetPower;
 
-                if (PowerBoxSDK.PBSetPWMPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBSetPWMPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     return true;
                 }
                 Notification.ShowError("Failed to set PWM port configuration.");
                 return false;
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"Error setting port config: {ex.Message}");
                 return false;
             }
         }
 
-        private void RefreshPowerPortConfig(int index) {
+        private void RefreshPowerPortConfig(int index)
+        {
             _isHardwareUpdate.Value = true;
-            try {
+            try
+            {
                 PowerBoxSDK.PB_POWER_PORT_CONFIG config = new PowerBoxSDK.PB_POWER_PORT_CONFIG { index = (uint)index };
-                if (PowerBoxSDK.PBGetPowerPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBGetPowerPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     _powerPorts.UpdateFromConfig(config);
                 }
-            } catch { } finally { _isHardwareUpdate.Value = false; }
+            }
+            catch { }
+            finally { _isHardwareUpdate.Value = false; }
         }
 
-        private void RefreshUSBPortConfig(int index) {
+        private void RefreshUSBPortConfig(int index)
+        {
             _isHardwareUpdate.Value = true;
-            try {
+            try
+            {
                 PowerBoxSDK.PB_USB_PORT_CONFIG config = new PowerBoxSDK.PB_USB_PORT_CONFIG { index = (uint)index };
-                if (PowerBoxSDK.PBGetUSBPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBGetUSBPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     _usbPorts.UpdateFromConfig(config);
                 }
-            } catch { } finally { _isHardwareUpdate.Value = false; }
+            }
+            catch { }
+            finally { _isHardwareUpdate.Value = false; }
         }
 
-        private void RefreshDewPortConfig(int index) {
+        private void RefreshDewPortConfig(int index)
+        {
             _isHardwareUpdate.Value = true;
-            try {
+            try
+            {
                 PowerBoxSDK.PB_DEW_PORT_CONFIG config = new PowerBoxSDK.PB_DEW_PORT_CONFIG { index = (uint)index };
-                if (PowerBoxSDK.PBGetDewPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBGetDewPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     _dewPorts.UpdateFromConfig(config);
                 }
-            } catch { } finally { _isHardwareUpdate.Value = false; }
+            }
+            catch { }
+            finally { _isHardwareUpdate.Value = false; }
         }
 
-        private void RefreshBuckPortConfig() {
+        private void RefreshBuckPortConfig()
+        {
             _isHardwareUpdate.Value = true;
-            try {
+            try
+            {
                 PowerBoxSDK.PB_BUCK_PORT_CONFIG config = new PowerBoxSDK.PB_BUCK_PORT_CONFIG();
-                if (PowerBoxSDK.PBGetBuckPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBGetBuckPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     _buckPorts.UpdateFromConfig(config);
                 }
-            } catch { } finally { _isHardwareUpdate.Value = false; }
+            }
+            catch { }
+            finally { _isHardwareUpdate.Value = false; }
         }
 
-        private void RefreshPWMPortConfig() {
+        private void RefreshPWMPortConfig()
+        {
             _isHardwareUpdate.Value = true;
-            try {
+            try
+            {
                 PowerBoxSDK.PB_PWM_PORT_CONFIG config = new PowerBoxSDK.PB_PWM_PORT_CONFIG();
-                if (PowerBoxSDK.PBGetPWMPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBGetPWMPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     _pwmPorts.UpdateFromConfig(config);
                 }
-            } catch { } finally { _isHardwareUpdate.Value = false; }
+            }
+            catch { }
+            finally { _isHardwareUpdate.Value = false; }
         }
 
-        private void RefreshWiFiConfig() {
+        private void RefreshWiFiConfig()
+        {
             _isHardwareUpdate.Value = true;
-            try {
+            try
+            {
                 PowerBoxSDK.PB_WIFI_CONFIG config = new PowerBoxSDK.PB_WIFI_CONFIG();
-                if (PowerBoxSDK.PBGetWiFiConfig(deviceId, out config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBGetWiFiConfig(deviceId, out config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     _wifi.UpdateFromConfig(config);
                 }
-            } catch { } finally { _isHardwareUpdate.Value = false; }
+            }
+            catch { }
+            finally { _isHardwareUpdate.Value = false; }
         }
 
-        private void UpdateFromDeviceStatus(PowerBoxSDK.PB_DEVICE_STATUS status) {
+        private void UpdateFromDeviceStatus(PowerBoxSDK.PB_DEVICE_STATUS status)
+        {
             _temperature = status.temperature == -127.0 ? double.NaN : Math.Round(status.temperature, 1);
             _humidity = status.humidity == -127.0 ? double.NaN : Math.Round(status.humidity, 1);
             _dewPoint = status.dewPoint == -127.0 ? double.NaN : Math.Round(status.dewPoint, 1);
@@ -1270,7 +1580,8 @@ namespace NINA.PINS.Drivers {
             OnPropertyChanged(nameof(ExtSensor));
         }
 
-        private void UpdateFromDeviceConfig(PowerBoxSDK.PB_DEVICE_CONFIG config) {
+        private void UpdateFromDeviceConfig(PowerBoxSDK.PB_DEVICE_CONFIG config)
+        {
             _updateRate = config.updateRate;
             _envUpdateRate = config.envUpdateRate;
             _temperatureOffset = Math.Round(config.temperatureOffset, 1);
@@ -1284,10 +1595,13 @@ namespace NINA.PINS.Drivers {
 
         private bool _isEnabledUI = true;
 
-        public bool IsEnabledUI {
+        public bool IsEnabledUI
+        {
             get => _isEnabledUI;
-            set {
-                if (_isEnabledUI != value) {
+            set
+            {
+                if (_isEnabledUI != value)
+                {
                     _isEnabledUI = value;
                     RaisePropertyChanged();
                     ((AsyncRelayCommand)RebootCommand).NotifyCanExecuteChanged();
@@ -1296,31 +1610,41 @@ namespace NINA.PINS.Drivers {
             }
         }
 
-        private async Task Reboot() {
+        private async Task Reboot()
+        {
             // Disable UI
             IsEnabledUI = false;
 
-            try {
+            try
+            {
                 // Trigger reboot
-                if (PowerBoxSDK.PBRestart(deviceId) != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBRestart(deviceId) != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     Notification.ShowError("Failed to reboot PowerBox device.");
                     Logger.Error("Failed to reboot device.");
                     return;
                 }
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"Error during reboot: {ex.Message}");
                 Logger.Error($"Error during reboot: {ex}");
-            } finally {
+            }
+            finally
+            {
                 // Enable UI
                 IsEnabledUI = true;
 
-                for (int i = 0; i < PowerPorts.Ports.Count; i++) {
+                for (int i = 0; i < PowerPorts.Ports.Count; i++)
+                {
                     RefreshPowerPortConfig(i);
                 }
-                for (int i = 0; i < USBPorts.Ports.Count; i++) {
+                for (int i = 0; i < USBPorts.Ports.Count; i++)
+                {
                     RefreshUSBPortConfig(i);
                 }
-                for (int i = 0; i < DewPorts.Ports.Count; i++) {
+                for (int i = 0; i < DewPorts.Ports.Count; i++)
+                {
                     RefreshDewPortConfig(i);
                 }
                 RefreshBuckPortConfig();
@@ -1330,31 +1654,41 @@ namespace NINA.PINS.Drivers {
             }
         }
 
-        private async Task Reset() {
+        private async Task Reset()
+        {
             // Disable UI
             IsEnabledUI = false;
 
-            try {
+            try
+            {
                 // Trigger reboot
-                if (PowerBoxSDK.PBFactoryReset(deviceId) != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
+                if (PowerBoxSDK.PBFactoryReset(deviceId) != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
                     Notification.ShowError("Failed to reset PowerBox device.");
                     Logger.Error("Failed to reset device.");
                     return;
                 }
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"Error during reset: {ex.Message}");
                 Logger.Error($"Error during reset: {ex}");
-            } finally {
+            }
+            finally
+            {
                 // Enable UI
                 IsEnabledUI = true;
 
-                for (int i = 0; i < PowerPorts.Ports.Count; i++) {
+                for (int i = 0; i < PowerPorts.Ports.Count; i++)
+                {
                     RefreshPowerPortConfig(i);
                 }
-                for (int i = 0; i < USBPorts.Ports.Count; i++) {
+                for (int i = 0; i < USBPorts.Ports.Count; i++)
+                {
                     RefreshUSBPortConfig(i);
                 }
-                for (int i = 0; i < DewPorts.Ports.Count; i++) {
+                for (int i = 0; i < DewPorts.Ports.Count; i++)
+                {
                     RefreshDewPortConfig(i);
                 }
                 RefreshBuckPortConfig();
@@ -1364,38 +1698,50 @@ namespace NINA.PINS.Drivers {
             }
         }
 
-        private async Task WiFiSurvey() {
+        private async Task WiFiSurvey()
+        {
             // Disable button
             IsWiFiSurveyRunning = true;
 
             // Clear current set of SSIDs
             WiFiNetworks.Clear();
 
-            try {
+            try
+            {
                 // Run the blocking SDK call on a background thread
-                await Task.Run(() => {
+                await Task.Run(() =>
+                {
                     var result = new PowerBoxSDK.PB_WIFI_SCAN_RESULT();
-                    if (PowerBoxSDK.PBScanWiFi(deviceId, out result) != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
-                        Application.Current.Dispatcher.Invoke(() => {
+                    if (PowerBoxSDK.PBScanWiFi(deviceId, out result) != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
                             Notification.ShowError("Failed to scan wifi networks.");
                             Logger.Error("Failed to scan wifi networks.");
                         });
                         return;
                     }
 
-                    foreach (var item in result.networks.OrderByDescending(wifi => wifi.rssi)) {
+                    foreach (var item in result.networks.OrderByDescending(wifi => wifi.rssi))
+                    {
                         // Skip empty or whitespace SSIDs
-                        if (!string.IsNullOrWhiteSpace(item.ssid)) {
-                            Application.Current.Dispatcher.Invoke(() => {
+                        if (!string.IsNullOrWhiteSpace(item.ssid))
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
                                 WiFiNetworks.Add(new WiFi(item.ssid, item.rssi, 0));
                             });
                         }
                     }
                 });
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"Error during survey: {ex.Message}");
                 Logger.Error($"Error during survey: {ex}");
-            } finally {
+            }
+            finally
+            {
                 // Enable button
                 IsWiFiSurveyRunning = false;
             }
@@ -1403,10 +1749,13 @@ namespace NINA.PINS.Drivers {
 
         private string _wifiSSID;
 
-        public string WiFiSSID {
+        public string WiFiSSID
+        {
             get => _wifiSSID;
-            set {
-                if (_wifiSSID != value) {
+            set
+            {
+                if (_wifiSSID != value)
+                {
                     _wifiSSID = value;
                     RaisePropertyChanged();
                 }
@@ -1415,23 +1764,29 @@ namespace NINA.PINS.Drivers {
 
         private string _wifiPASS;
 
-        public string WiFiPASS {
+        public string WiFiPASS
+        {
             get => _wifiPASS;
-            set {
-                if (_wifiPASS != value) {
+            set
+            {
+                if (_wifiPASS != value)
+                {
                     _wifiPASS = value;
                     RaisePropertyChanged();
                 }
             }
         }
 
-        private async Task WiFiConnect(PowerBoxSDK.PB_WIFI_MODE mode) {
+        private async Task WiFiConnect(PowerBoxSDK.PB_WIFI_MODE mode)
+        {
             string ssid = mode == PowerBoxSDK.PB_WIFI_MODE.PB_WIFI_MODE_CLIENT ? SelectedWiFiNetwork?.SSID : WiFiSSID;
-            if (ssid == string.Empty) {
+            if (ssid == string.Empty)
+            {
                 Notification.ShowError(string.Format("SSID empty", RuntimeInformation.OSDescription));
                 return;
             }
-            if (WiFiPASS == string.Empty) {
+            if (WiFiPASS == string.Empty)
+            {
                 Notification.ShowError(string.Format("Password empty", RuntimeInformation.OSDescription));
                 return;
             }
@@ -1439,17 +1794,22 @@ namespace NINA.PINS.Drivers {
             // Disable button
             IsWiFiConnecting = true;
 
-            try {
+            try
+            {
                 // Run the blocking SDK call on a background thread
-                await Task.Run(() => {
-                    PowerBoxSDK.PB_WIFI_CONFIG config = new PowerBoxSDK.PB_WIFI_CONFIG {
+                await Task.Run(() =>
+                {
+                    PowerBoxSDK.PB_WIFI_CONFIG config = new PowerBoxSDK.PB_WIFI_CONFIG
+                    {
                         mask = PowerBoxSDK.MASK_WIFI_SSID | PowerBoxSDK.MASK_WIFI_PASSWORD | PowerBoxSDK.MASK_WIFI_MODE,
                         mode = mode,
                         ssid = ssid,
                         pass = WiFiPASS
                     };
-                    if (PowerBoxSDK.PBSetWiFiConfig(deviceId, ref config) != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS) {
-                        Application.Current.Dispatcher.Invoke(() => {
+                    if (PowerBoxSDK.PBSetWiFiConfig(deviceId, ref config) != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
                             Notification.ShowError("Failed to connect to wifi network.");
                             Logger.Error("Failed to connect to wifi network.");
                         });
@@ -1457,14 +1817,19 @@ namespace NINA.PINS.Drivers {
                     }
 
                     // Update WiFi config
-                    Application.Current.Dispatcher.Invoke(() => {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
                         RefreshWiFiConfig();
                     });
                 });
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Notification.ShowError($"Error during WiFi connect: {ex.Message}");
                 Logger.Error($"Error during WiFi connect: {ex}");
-            } finally {
+            }
+            finally
+            {
                 // Enable button
                 IsWiFiConnecting = false;
             }
@@ -1478,23 +1843,28 @@ namespace NINA.PINS.Drivers {
 
         #region Unsupported
 
-        public void SendCommandBlind(string command, bool raw = true) {
+        public void SendCommandBlind(string command, bool raw = true)
+        {
             throw new NotImplementedException();
         }
 
-        public bool SendCommandBool(string command, bool raw = true) {
+        public bool SendCommandBool(string command, bool raw = true)
+        {
             throw new NotImplementedException();
         }
 
-        public string SendCommandString(string command, bool raw = true) {
+        public string SendCommandString(string command, bool raw = true)
+        {
             throw new NotImplementedException();
         }
 
-        public void SetupDialog() {
+        public void SetupDialog()
+        {
             throw new NotImplementedException();
         }
 
-        public string Action(string actionName, string actionParameters) {
+        public string Action(string actionName, string actionParameters)
+        {
             throw new NotImplementedException();
         }
 

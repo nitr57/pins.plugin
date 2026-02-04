@@ -2,9 +2,10 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace NINA.PINS.SDK {
-
-    internal static class PowerBoxSDK {
+namespace NINA.PINS.SDK
+{
+    internal static class PowerBoxSDK
+    {
         private const string DLL = "PowerBoxSDK.dll";
 
         public const int PB_MAX_NUM = 32;
@@ -21,7 +22,8 @@ namespace NINA.PINS.SDK {
         public const int PB_NUM_USB_PORTS = 6;
         public const int PB_NUM_DEW_PORTS = 2;
 
-        public enum PB_ERROR_TYPE {
+        public enum PB_ERROR_TYPE
+        {
             PB_SUCCESS = 0,
             PB_ERROR_INVALID_ID,
             PB_ERROR_INVALID_PARAMETER,
@@ -31,7 +33,8 @@ namespace NINA.PINS.SDK {
             PB_ERROR_TIMEOUT
         }
 
-        public enum PB_WIFI_MODE : uint {
+        public enum PB_WIFI_MODE : uint
+        {
             PB_WIFI_MODE_AP = 0,
             PB_WIFI_MODE_CLIENT = 1,
             PB_WIFI_MODE_OFF = 2
@@ -46,7 +49,8 @@ namespace NINA.PINS.SDK {
         public const uint MASK_PB_ALL = 0x3F;
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        public struct PB_VERSION {
+        public struct PB_VERSION
+        {
             public uint firmware;
 
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = PB_NAME_LEN)]
@@ -60,7 +64,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_DEVICE_CONFIG {
+        public struct PB_DEVICE_CONFIG
+        {
             public uint mask;
             public float temperatureOffset;
             public float humidityOffset;
@@ -71,7 +76,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_DEVICE_STATUS {
+        public struct PB_DEVICE_STATUS
+        {
             public int upTime;
             public float temperature;
             public float humidity;
@@ -80,7 +86,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_SUPPLY_STATUS {
+        public struct PB_SUPPLY_STATUS
+        {
             public float mainVoltage;
             public float usbVoltage;
             public float current;
@@ -89,8 +96,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_POWER_PORT_STATUS {
-
+        public struct PB_POWER_PORT_STATUS
+        {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_POWER_PORTS)]
             public float[] current;
 
@@ -99,8 +106,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_USB_PORT_STATUS {
-
+        public struct PB_USB_PORT_STATUS
+        {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_USB_PORTS)]
             public float[] current;
 
@@ -112,7 +119,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_DEW_PORT_STATUS {
+        public struct PB_DEW_PORT_STATUS
+        {
             public int pwmResolution;
 
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_DEW_PORTS)]
@@ -132,7 +140,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_BUCK_PORT_STATUS {
+        public struct PB_BUCK_PORT_STATUS
+        {
             public float current;
             public float voltage;
             public int overcurrent;
@@ -142,7 +151,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_PWM_PORT_STATUS {
+        public struct PB_PWM_PORT_STATUS
+        {
             public int pwmResolution;
             public float current;
             public int overcurrent;
@@ -150,8 +160,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_WIFI_STATUS {
-
+        public struct PB_WIFI_STATUS
+        {
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = PB_IP_LEN)]
             public string IP;
 
@@ -159,8 +169,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_WIFI_NETWORK {
-
+        public struct PB_WIFI_NETWORK
+        {
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = PB_SSID_LEN)]
             public string ssid;
 
@@ -169,7 +179,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_WIFI_SCAN_RESULT {
+        public struct PB_WIFI_SCAN_RESULT
+        {
             public int count;
 
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_WIFI_NETWORKS)]
@@ -186,7 +197,8 @@ namespace NINA.PINS.SDK {
         public const uint MASK_PORT_ALL = 0x7F;
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_POWER_PORT_CONFIG {
+        public struct PB_POWER_PORT_CONFIG
+        {
             public uint mask;
             public uint index;
             public int enabled;
@@ -195,7 +207,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_USB_PORT_CONFIG {
+        public struct PB_USB_PORT_CONFIG
+        {
             public uint mask;
             public uint index;
             public int enabled;
@@ -204,7 +217,8 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_DEW_PORT_CONFIG {
+        public struct PB_DEW_PORT_CONFIG
+        {
             public uint mask;
             public uint index;
             public int enabled;
@@ -215,16 +229,18 @@ namespace NINA.PINS.SDK {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_BUCK_PORT_CONFIG {
+        public struct PB_BUCK_PORT_CONFIG
+        {
             public uint mask;
-            public float voltage;
+            public float targetVoltage;
             public int enabled;
             public int bootState;
             public int overcurrentReset;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_PWM_PORT_CONFIG {
+        public struct PB_PWM_PORT_CONFIG
+        {
             public uint mask;
             public int enabled;
             public int power;
@@ -239,7 +255,8 @@ namespace NINA.PINS.SDK {
         public const uint MASK_WIFI_ALL = 0x1F;
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PB_WIFI_CONFIG {
+        public struct PB_WIFI_CONFIG
+        {
             public uint mask;
             public PB_WIFI_MODE mode;
 
