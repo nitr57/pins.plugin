@@ -422,6 +422,10 @@ namespace NINA.PINS.Drivers {
                 }
             }, pollingCts.Token);
 
+            if(Connected) {
+                PINS.ConnectedMeteoStation = this;
+            }
+
             return Connected;
         }
 
@@ -434,6 +438,9 @@ namespace NINA.PINS.Drivers {
 
                 MeteoStationSDK.MSDeviceClose(deviceId);
             } catch { } finally {
+                if (PINS.ConnectedMeteoStation == this) {
+                    PINS.ConnectedMeteoStation = null;
+                }
                 Connected = false;
             }
         }

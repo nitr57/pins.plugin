@@ -10,6 +10,7 @@ namespace NINA.PINS {
     public class PINS : PluginBase {
         public static IWeatherDataMediator WeatherDataMediator { get; private set; }
         public static PowerBoxDriver ConnectedPowerBox { get; set; }
+        public static MeteoStationDriver ConnectedMeteoStation { get; set; }
 
         [ImportingConstructor]
         public PINS(IWeatherDataMediator weatherDataMediator) {
