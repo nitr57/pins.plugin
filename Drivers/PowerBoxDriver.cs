@@ -115,7 +115,6 @@ namespace NINA.PINS.Drivers
         }
 
         private readonly object _configLock;
-        private readonly int deviceId;
         private readonly AsyncLocal<bool> _isHardwareUpdate = new();
         private CancellationTokenSource pollingCts;
         private Task pollingTask;
@@ -126,6 +125,9 @@ namespace NINA.PINS.Drivers
         private PowerBoxBuckPorts _buckPorts;
         private PowerBoxPWMPorts _pwmPorts;
         private WiFi _wifi;
+
+        private readonly int deviceId;
+        public int DeviceId => deviceId;
 
         public string Name { get; }
 
