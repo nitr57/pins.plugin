@@ -17,6 +17,9 @@ namespace NINA.PINS.Equipment {
         private double _supply5V = double.NaN;
         public double Supply5V => _supply5V;
 
+        private double _averageAmps = double.NaN;
+        public double AverageAmps => _averageAmps;
+
         private double _ampsPerHour = double.NaN;
         public double AmpsPerHour => _ampsPerHour;
 
@@ -28,6 +31,7 @@ namespace NINA.PINS.Equipment {
             _supply12A = Math.Round(status.current, 2);
             _supply12W = Math.Round(_supply12V * _supply12A, 2);
             _supply5V = Math.Round(status.usbVoltage, 2);
+            _averageAmps = Math.Round(status.averageAmps, 2);
             _ampsPerHour = Math.Round(status.ampereHours, 2);
             _wattsPerHour = Math.Round(status.wattHours, 2);
 
@@ -35,6 +39,7 @@ namespace NINA.PINS.Equipment {
             OnPropertyChanged(nameof(Supply12A));
             OnPropertyChanged(nameof(Supply12W));
             OnPropertyChanged(nameof(Supply5V));
+            OnPropertyChanged(nameof(AverageAmps));
             OnPropertyChanged(nameof(AmpsPerHour));
             OnPropertyChanged(nameof(WattsPerHour));
         }

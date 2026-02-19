@@ -18,9 +18,9 @@ namespace NINA.PINS.SDK
         public const int PB_HOSTNAME_LEN = 32;
         public const int PB_PASSWORD_LEN = 64;
 
-        public const int PB_NUM_POWER_PORTS = 6;
-        public const int PB_NUM_USB_PORTS = 6;
-        public const int PB_NUM_DEW_PORTS = 2;
+        public const int PB_MAX_POWER_PORTS = 8;
+        public const int PB_MAX_USB_PORTS = 8;
+        public const int PB_MAX_DEW_PORTS = 2;
 
         public enum PB_ERROR_TYPE
         {
@@ -30,7 +30,8 @@ namespace NINA.PINS.SDK
             PB_ERROR_INVALID_STATE,
             PB_ERROR_COMMUNICATION,
             PB_ERROR_NULL_POINTER,
-            PB_ERROR_TIMEOUT
+            PB_ERROR_TIMEOUT,
+            PB_ERROR_NOT_AVAILABLE,
         }
 
         public enum PB_WIFI_MODE : uint
@@ -79,10 +80,12 @@ namespace NINA.PINS.SDK
         public struct PB_DEVICE_STATUS
         {
             public int upTime;
+            public float coreTemp;
             public float temperature;
             public float humidity;
             public float dewPoint;
             public int extSensor;
+            public int hasWifi;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -91,6 +94,7 @@ namespace NINA.PINS.SDK
             public float mainVoltage;
             public float usbVoltage;
             public float current;
+            public float averageAmps;
             public float ampereHours;
             public float wattHours;
         }
@@ -98,44 +102,49 @@ namespace NINA.PINS.SDK
         [StructLayout(LayoutKind.Sequential)]
         public struct PB_POWER_PORT_STATUS
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_POWER_PORTS)]
+            public int numPorts;
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_POWER_PORTS)]
             public float[] current;
 
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_POWER_PORTS)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_POWER_PORTS)]
             public int[] overcurrent;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         public struct PB_USB_PORT_STATUS
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_USB_PORTS)]
+            public int numPorts;
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_USB_PORTS)]
             public float[] current;
 
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_USB_PORTS)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_USB_PORTS)]
             public float[] voltage;
 
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_USB_PORTS)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_USB_PORTS)]
             public int[] overcurrent;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         public struct PB_DEW_PORT_STATUS
         {
+            public int numPorts;
             public int pwmResolution;
 
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_DEW_PORTS)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_DEW_PORTS)]
             public float[] current;
 
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_DEW_PORTS)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_DEW_PORTS)]
             public int[] overcurrent;
 
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_DEW_PORTS)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_DEW_PORTS)]
             public float[] probe;
 
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_DEW_PORTS)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_DEW_PORTS)]
             public int[] pwm;
 
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_NUM_DEW_PORTS)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_DEW_PORTS)]
             public int[] state;
         }
 

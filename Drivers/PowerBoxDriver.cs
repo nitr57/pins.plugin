@@ -126,6 +126,20 @@ namespace NINA.PINS.Drivers
         private PowerBoxPWMPorts _pwmPorts;
         private WiFi _wifi;
 
+        // Track actual port counts reported by hardware
+        private int _actualPowerPortCount = 0;
+        public int ActualPowerPortCount => _actualPowerPortCount;
+
+        private int _actualUSBPortCount = 0;
+        public int ActualUSBPortCount => _actualUSBPortCount;
+
+        private int _actualDewPortCount = 0;
+        public int ActualDewPortCount => _actualDewPortCount;
+
+        // Buck and PWM always have 1 port each
+        public int ActualBuckPortCount => 1;
+        public int ActualPWMPortCount => 1;
+
         private readonly int deviceId;
         public int DeviceId => deviceId;
 
@@ -192,6 +206,9 @@ namespace NINA.PINS.Drivers
         private double _temperature = double.NaN;
         public double Temperature => _temperature;
 
+        private double _coreTemp = double.NaN;
+        public double CoreTemp => _coreTemp;
+
         private double _humidity = double.NaN;
         public double Humidity => _humidity;
 
@@ -227,6 +244,9 @@ namespace NINA.PINS.Drivers
 
         private bool _extSensor = false;
         public bool ExtSensor => _extSensor;
+
+        private bool _hasWifi = false;
+        public bool HasWifi => _hasWifi;
 
         private double _temperatureOffset = double.NaN;
 
@@ -303,9 +323,6 @@ namespace NINA.PINS.Drivers
 
         private double _supply5W = double.NaN;
         public double Supply5W => _supply5W;
-
-        private double _averageAmps = double.NaN;
-        public double AverageAmps => _averageAmps;
 
         public static IList<int> ScanDeviceIds()
         {
@@ -401,8 +418,10 @@ namespace NINA.PINS.Drivers
                 // Fetch initial power port configuration
                 try
                 {
+                    PowerBoxSDK.PBGetPowerPortStatus(deviceId, out var status);
+                    _actualPowerPortCount = status.numPorts;
                     PowerBoxSDK.PB_POWER_PORT_CONFIG config = new PowerBoxSDK.PB_POWER_PORT_CONFIG();
-                    for (uint i = 0; i < PowerBoxSDK.PB_NUM_POWER_PORTS; ++i)
+                    for (uint i = 0; i < status.numPorts; ++i)
                     {
                         config.index = i;
                         if (PowerBoxSDK.PBGetPowerPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
@@ -419,8 +438,10 @@ namespace NINA.PINS.Drivers
                 // Fetch initial USB port configuration
                 try
                 {
+                    PowerBoxSDK.PBGetUSBPortStatus(deviceId, out var status);
+                    _actualUSBPortCount = status.numPorts;
                     PowerBoxSDK.PB_USB_PORT_CONFIG config = new PowerBoxSDK.PB_USB_PORT_CONFIG();
-                    for (uint i = 0; i < PowerBoxSDK.PB_NUM_USB_PORTS; ++i)
+                    for (uint i = 0; i < status.numPorts; ++i)
                     {
                         config.index = i;
                         if (PowerBoxSDK.PBGetUSBPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
@@ -437,8 +458,10 @@ namespace NINA.PINS.Drivers
                 // Fetch initial Dew port configuration
                 try
                 {
+                    PowerBoxSDK.PBGetDewPortStatus(deviceId, out var status);
+                    _actualDewPortCount = status.numPorts;
                     PowerBoxSDK.PB_DEW_PORT_CONFIG config = new PowerBoxSDK.PB_DEW_PORT_CONFIG();
-                    for (uint i = 0; i < PowerBoxSDK.PB_NUM_DEW_PORTS; ++i)
+                    for (uint i = 0; i < status.numPorts; ++i)
                     {
                         config.index = i;
                         if (PowerBoxSDK.PBGetDewPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
@@ -682,9 +705,26 @@ namespace NINA.PINS.Drivers
             }, pollingCts.Token);
 
             // We need to wait for the status updates to arrive, so we simply loop a bit
-            while ((PWMPorts.Ports[0].Resolution == 0 || DewPorts.Ports[0].Resolution == 0 || BuckPorts.Ports[0].MaxVoltage < 1.0) && !token.IsCancellationRequested)
+            // Add a timeout to prevent infinite waiting (max 5 seconds)
+            var waitTimeout = DateTime.Now.AddSeconds(5);
+            while ((PWMPorts.Ports[0].Resolution == 0 || DewPorts.Ports[0].Resolution == 0 || BuckPorts.Ports[0].MaxVoltage < 1.0) 
+                && !token.IsCancellationRequested 
+                && DateTime.Now < waitTimeout)
             {
                 Thread.Sleep(100);
+            }
+
+            // Check if we timed out before all values were initialized
+            if (PWMPorts.Ports[0].Resolution == 0 || DewPorts.Ports[0].Resolution == 0 || BuckPorts.Ports[0].MaxVoltage < 1.0)
+            {
+                var errorMsg = $"PowerBox connection failed: Timeout waiting for device status initialization. PWM Resolution: {PWMPorts.Ports[0].Resolution}, Dew Resolution: {DewPorts.Ports[0].Resolution}, Buck MaxVoltage: {BuckPorts.Ports[0].MaxVoltage}";
+                Logger.Error(errorMsg);
+                Notification.ShowError(errorMsg);
+                
+                Disconnect();
+                
+                Connected = false;
+                return Connected;
             }
 
             // Scan for switches
@@ -740,7 +780,7 @@ namespace NINA.PINS.Drivers
             Switches.Add(new PowerBoxSwitch(() => "Current", () => "Supply [A]", () => _powerSupply.Supply12A, 4));
             Switches.Add(new PowerBoxSwitch(() => "Dew Point", () => "Environment [°C]", () => DewPoint, 5));
             Switches.Add(new PowerBoxSwitch(() => "Power", () => "Supply [W]", () => _powerSupply.Supply12W, 6));
-            Switches.Add(new PowerBoxSwitch(() => "AverageAmps", () => "Consumption average amps", () => AverageAmps, 7));
+            Switches.Add(new PowerBoxSwitch(() => "AverageAmps", () => "Consumption average amps", () => _powerSupply.AverageAmps, 7));
             Switches.Add(new PowerBoxSwitch(() => "WattsPerHour", () => "Consumption watts per hour", () => _powerSupply.WattsPerHour, 8));
             Switches.Add(new PowerBoxSwitch(() => "AmpsPerHour", () => "Consumption amps per hour", () => _powerSupply.AmpsPerHour, 9));
 
@@ -1579,10 +1619,12 @@ namespace NINA.PINS.Drivers
 
         private void UpdateFromDeviceStatus(PowerBoxSDK.PB_DEVICE_STATUS status)
         {
+            _coreTemp = status.coreTemp == -127.0 ? double.NaN : Math.Round(status.coreTemp, 1);
             _temperature = status.temperature == -127.0 ? double.NaN : Math.Round(status.temperature, 1);
             _humidity = status.humidity == -127.0 ? double.NaN : Math.Round(status.humidity, 1);
             _dewPoint = status.dewPoint == -127.0 ? double.NaN : Math.Round(status.dewPoint, 1);
             _extSensor = status.extSensor != 0;
+            _hasWifi = status.hasWifi != 0;
 
             // Uptime formatting
             int days = status.upTime / 86400;
@@ -1597,10 +1639,12 @@ namespace NINA.PINS.Drivers
             _upTimeFormatted = $"{days} days, {hours} hours, {minutes} min, {seconds} sec";
 
             OnPropertyChanged(nameof(UpTimeFormatted));
+            OnPropertyChanged(nameof(CoreTemp));
             OnPropertyChanged(nameof(Temperature));
             OnPropertyChanged(nameof(Humidity));
             OnPropertyChanged(nameof(DewPoint));
             OnPropertyChanged(nameof(ExtSensor));
+            OnPropertyChanged(nameof(HasWifi));
         }
 
         private void UpdateFromDeviceConfig(PowerBoxSDK.PB_DEVICE_CONFIG config)
