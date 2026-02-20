@@ -396,7 +396,7 @@ namespace NINA.PINS.Drivers {
                                 // Try to fetch from connected PowerBox if available
                                 try {
                                     var powerBox = PINS.ConnectedPowerBox;
-                                    if (powerBox?.Connected == true && !double.IsNaN(powerBox.Temperature)) {
+                                    if (powerBox?.Connected == true && !double.IsNaN(powerBox.Temperature) && !powerBox.ExtSensor) {
                                         _temperature = powerBox.Temperature;
                                         _humidity = powerBox.Humidity;
                                         _dewPoint = powerBox.DewPoint;
