@@ -707,8 +707,8 @@ namespace NINA.PINS.Drivers
             // We need to wait for the status updates to arrive, so we simply loop a bit
             // Add a timeout to prevent infinite waiting (max 5 seconds)
             var waitTimeout = DateTime.Now.AddSeconds(5);
-            while ((PWMPorts.Ports[0].Resolution == 0 || DewPorts.Ports[0].Resolution == 0 || BuckPorts.Ports[0].MaxVoltage < 1.0) 
-                && !token.IsCancellationRequested 
+            while ((PWMPorts.Ports[0].Resolution == 0 || DewPorts.Ports[0].Resolution == 0 || BuckPorts.Ports[0].MaxVoltage < 1.0)
+                && !token.IsCancellationRequested
                 && DateTime.Now < waitTimeout)
             {
                 Thread.Sleep(100);
@@ -720,9 +720,9 @@ namespace NINA.PINS.Drivers
                 var errorMsg = $"PowerBox connection failed: Timeout waiting for device status initialization. PWM Resolution: {PWMPorts.Ports[0].Resolution}, Dew Resolution: {DewPorts.Ports[0].Resolution}, Buck MaxVoltage: {BuckPorts.Ports[0].MaxVoltage}";
                 Logger.Error(errorMsg);
                 Notification.ShowError(errorMsg);
-                
+
                 Disconnect();
-                
+
                 Connected = false;
                 return Connected;
             }
@@ -1762,6 +1762,19 @@ namespace NINA.PINS.Drivers
                 RefreshPWMPortConfig();
                 RefreshWiFiConfig();
                 RaiseAllPropertiesChanged();
+            }
+        }
+
+        public bool Beep(int volume, int durationMs)
+        {
+            try
+            {
+                return PowerBoxSDK.PBBeep(deviceId, volume, durationMs) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error during beep: {ex}");
+                return false;
             }
         }
 
