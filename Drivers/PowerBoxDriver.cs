@@ -136,9 +136,11 @@ namespace NINA.PINS.Drivers
         private int _actualDewPortCount = 0;
         public int ActualDewPortCount => _actualDewPortCount;
 
-        // Buck and PWM always have 1 port each
-        public int ActualBuckPortCount => 1;
-        public int ActualPWMPortCount => 1;
+        private int _actualBuckPortCount = 0;
+        public int ActualBuckPortCount => _actualBuckPortCount;
+
+        private int _actualPWMPortCount = 0;
+        public int ActualPWMPortCount => _actualPWMPortCount;
 
         private readonly int deviceId;
         public int DeviceId => deviceId;
@@ -481,6 +483,7 @@ namespace NINA.PINS.Drivers
                     PowerBoxSDK.PB_BUCK_PORT_CONFIG config = new PowerBoxSDK.PB_BUCK_PORT_CONFIG();
                     if (PowerBoxSDK.PBGetBuckPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
                     {
+                        _actualBuckPortCount = 1;
                         _buckPorts.UpdateFromConfig(config);
                     }
                 }
@@ -495,6 +498,7 @@ namespace NINA.PINS.Drivers
                     PowerBoxSDK.PB_PWM_PORT_CONFIG config = new PowerBoxSDK.PB_PWM_PORT_CONFIG();
                     if (PowerBoxSDK.PBGetPWMPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
                     {
+                        _actualPWMPortCount = 1;
                         _pwmPorts.UpdateFromConfig(config);
                     }
                 }
@@ -707,7 +711,9 @@ namespace NINA.PINS.Drivers
             // We need to wait for the status updates to arrive, so we simply loop a bit
             // Add a timeout to prevent infinite waiting (max 5 seconds)
             var waitTimeout = DateTime.Now.AddSeconds(5);
-            while ((PWMPorts.Ports[0].Resolution == 0 || DewPorts.Ports[0].Resolution == 0 || BuckPorts.Ports[0].MaxVoltage < 1.0)
+            while ((DewPorts.Ports[0].Resolution == 0
+                || (_actualBuckPortCount > 0 && BuckPorts.Ports[0].MaxVoltage < 1.0)
+                || (_actualPWMPortCount > 0 && PWMPorts.Ports[0].Resolution == 0))
                 && !token.IsCancellationRequested
                 && DateTime.Now < waitTimeout)
             {
@@ -715,9 +721,11 @@ namespace NINA.PINS.Drivers
             }
 
             // Check if we timed out before all values were initialized
-            if (PWMPorts.Ports[0].Resolution == 0 || DewPorts.Ports[0].Resolution == 0 || BuckPorts.Ports[0].MaxVoltage < 1.0)
+            if (DewPorts.Ports[0].Resolution == 0
+                || (_actualBuckPortCount > 0 && BuckPorts.Ports[0].MaxVoltage < 1.0)
+                || (_actualPWMPortCount > 0 && PWMPorts.Ports[0].Resolution == 0))
             {
-                var errorMsg = $"PowerBox connection failed: Timeout waiting for device status initialization. PWM Resolution: {PWMPorts.Ports[0].Resolution}, Dew Resolution: {DewPorts.Ports[0].Resolution}, Buck MaxVoltage: {BuckPorts.Ports[0].MaxVoltage}";
+                var errorMsg = $"PowerBox connection failed: Timeout waiting for device status initialization. Dew Resolution: {DewPorts.Ports[0].Resolution}, Buck MaxVoltage: {BuckPorts.Ports[0].MaxVoltage}, PWM Resolution: {PWMPorts.Ports[0].Resolution}";
                 Logger.Error(errorMsg);
                 Notification.ShowError(errorMsg);
 
