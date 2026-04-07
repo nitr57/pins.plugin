@@ -480,11 +480,16 @@ namespace NINA.PINS.Drivers
                 // Fetch initial Buck port configuration
                 try
                 {
+                    PowerBoxSDK.PBGetBuckPortStatus(deviceId, out var status);
+                    _actualBuckPortCount = status.numPorts;
                     PowerBoxSDK.PB_BUCK_PORT_CONFIG config = new PowerBoxSDK.PB_BUCK_PORT_CONFIG();
-                    if (PowerBoxSDK.PBGetBuckPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    for (uint i = 0; i < status.numPorts; ++i)
                     {
-                        _actualBuckPortCount = 1;
-                        _buckPorts.UpdateFromConfig(config);
+                        config.index = i;
+                        if (PowerBoxSDK.PBGetBuckPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                        {
+                            _buckPorts.UpdateFromConfig(config);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -495,11 +500,16 @@ namespace NINA.PINS.Drivers
                 // Fetch initial PWM port configuration
                 try
                 {
+                    PowerBoxSDK.PBGetPWMPortStatus(deviceId, out var status);
+                    _actualPWMPortCount = status.numPorts;
                     PowerBoxSDK.PB_PWM_PORT_CONFIG config = new PowerBoxSDK.PB_PWM_PORT_CONFIG();
-                    if (PowerBoxSDK.PBGetPWMPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    for (uint i = 0; i < status.numPorts; ++i)
                     {
-                        _actualPWMPortCount = 1;
-                        _pwmPorts.UpdateFromConfig(config);
+                        config.index = i;
+                        if (PowerBoxSDK.PBGetPWMPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                        {
+                            _pwmPorts.UpdateFromConfig(config);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -711,7 +721,7 @@ namespace NINA.PINS.Drivers
             // We need to wait for the status updates to arrive, so we simply loop a bit
             // Add a timeout to prevent infinite waiting (max 5 seconds)
             var waitTimeout = DateTime.Now.AddSeconds(5);
-            while ((DewPorts.Ports[0].Resolution == 0
+            while (((_actualDewPortCount > 0 && DewPorts.Ports[0].Resolution == 0)
                 || (_actualBuckPortCount > 0 && BuckPorts.Ports[0].MaxVoltage < 1.0)
                 || (_actualPWMPortCount > 0 && PWMPorts.Ports[0].Resolution == 0))
                 && !token.IsCancellationRequested
@@ -721,7 +731,7 @@ namespace NINA.PINS.Drivers
             }
 
             // Check if we timed out before all values were initialized
-            if (DewPorts.Ports[0].Resolution == 0
+            if ((_actualDewPortCount > 0 && DewPorts.Ports[0].Resolution == 0)
                 || (_actualBuckPortCount > 0 && BuckPorts.Ports[0].MaxVoltage < 1.0)
                 || (_actualPWMPortCount > 0 && PWMPorts.Ports[0].Resolution == 0))
             {

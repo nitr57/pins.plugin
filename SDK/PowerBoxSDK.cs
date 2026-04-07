@@ -151,6 +151,7 @@ namespace NINA.PINS.SDK
         [StructLayout(LayoutKind.Sequential)]
         public struct PB_BUCK_PORT_STATUS
         {
+            public int numPorts;
             public float current;
             public float voltage;
             public int overcurrent;
@@ -162,6 +163,7 @@ namespace NINA.PINS.SDK
         [StructLayout(LayoutKind.Sequential)]
         public struct PB_PWM_PORT_STATUS
         {
+            public int numPorts;
             public int pwmResolution;
             public float current;
             public int overcurrent;
@@ -241,6 +243,7 @@ namespace NINA.PINS.SDK
         public struct PB_BUCK_PORT_CONFIG
         {
             public uint mask;
+            public uint index;
             public float targetVoltage;
             public int enabled;
             public int bootState;
@@ -251,6 +254,7 @@ namespace NINA.PINS.SDK
         public struct PB_PWM_PORT_CONFIG
         {
             public uint mask;
+            public uint index;
             public int enabled;
             public int power;
             public int overcurrentReset;
