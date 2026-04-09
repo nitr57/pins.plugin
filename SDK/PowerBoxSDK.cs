@@ -109,6 +109,9 @@ namespace NINA.PINS.SDK
 
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_POWER_PORTS)]
             public int[] overcurrent;
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_POWER_PORTS)]
+            public int[] readOnly;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -124,6 +127,9 @@ namespace NINA.PINS.SDK
 
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_USB_PORTS)]
             public int[] overcurrent;
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_POWER_PORTS)]
+            public int[] readOnly;
         }
 
         [StructLayout(LayoutKind.Sequential)]

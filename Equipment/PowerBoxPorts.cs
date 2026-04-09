@@ -36,6 +36,7 @@ namespace NINA.PINS.Equipment
             for (int i = 0; i < _ports.Count; i++)
             {
                 _ports[i].UpdateFromStatus(float.NaN, status.current[i], status.overcurrent[i]);
+                _ports[i].UpdateReadOnly(status.readOnly[i] != 0);
             }
         }
 
@@ -44,6 +45,7 @@ namespace NINA.PINS.Equipment
             for (int i = 0; i < _ports.Count; i++)
             {
                 _ports[i].UpdateFromStatus(status.voltage[i], status.current[i], status.overcurrent[i]);
+                _ports[i].UpdateReadOnly(status.readOnly[i] != 0);
             }
         }
 
@@ -112,7 +114,7 @@ namespace NINA.PINS.Equipment
     // Backwards compatibility aliases
     public class PowerBoxPorts : PowerBoxPorts<PowerBoxPort>
     {
-        public PowerBoxPorts() : base(index => new PowerBoxPort(index, index == 0), PowerBoxSDK.PB_MAX_POWER_PORTS)
+        public PowerBoxPorts() : base(index => new PowerBoxPort(index), PowerBoxSDK.PB_MAX_POWER_PORTS)
         {
         }
     }

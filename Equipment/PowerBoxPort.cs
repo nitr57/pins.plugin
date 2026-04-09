@@ -4,8 +4,15 @@ using System;
 namespace NINA.PINS.Equipment {
 
     public class PowerBoxPort : BaseINPC {
-        private readonly bool _readOnly;
+        private bool _readOnly;
         public bool ReadOnly => _readOnly;
+
+        internal void UpdateReadOnly(bool readOnly) {
+            if (_readOnly != readOnly) {
+                _readOnly = readOnly;
+                OnPropertyChanged(nameof(ReadOnly));
+            }
+        }
 
         private readonly int _index;
         public int Index => _index;
