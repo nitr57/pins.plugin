@@ -1121,16 +1121,21 @@ namespace NINA.PINS.Drivers
         {
             lock (_configLock)
             {
-                JObject config = [];
+                string configPath = Path.Combine(CoreUtil.APPLICATIONTEMPPATH, "Config", "powerbox.cfg");
+
+                Directory.CreateDirectory(Path.GetDirectoryName(configPath));
+
+                if (!File.Exists(configPath))
+                {
+                    return null;
+                }
 
                 try
                 {
-                    // Open for reading
-                    using var fs = new FileStream(Path.Combine(CoreUtil.APPLICATIONTEMPPATH, "Config", "powerbox.cfg"), FileMode.Open, FileAccess.Read, FileShare.None);
+                    using var fs = new FileStream(configPath, FileMode.Open, FileAccess.Read, FileShare.None);
                     using var reader = new StreamReader(fs);
                     var jsonConfig = reader.ReadToEnd();
 
-                    // Deserialize
                     dynamic jsonObj = JsonConvert.DeserializeObject(jsonConfig) ?? new JObject();
 
                     if (jsonObj.ContainsKey(uuid))
@@ -1138,14 +1143,13 @@ namespace NINA.PINS.Drivers
                         return jsonObj[uuid] as JObject;
                     }
                 }
-                catch (FileNotFoundException)
+                catch (Exception ex)
                 {
-                    // File does not exist
-                    return null;
+                    Notification.ShowError($"Error reading config file: {ex.Message}");
                 }
-            }
 
-            return null;
+                return null;
+            }
         }
 
         private void Store(string uuid, JObject config)
