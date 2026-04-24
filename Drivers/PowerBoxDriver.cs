@@ -1102,6 +1102,13 @@ namespace NINA.PINS.Drivers
                 }
                 uint mask = e.PropertyName switch
                 {
+                    // When enabling the PWM port, always include the current power level in the
+                    // same SDK call so the port turns on at the correct brightness. Without this,
+                    // a subsequent SetBrightness call may be skipped by FlatDeviceVM because the
+                    // hardware-reported power level still matches the requested value, leaving the
+                    // PWM enabled but outputting nothing if the firmware reset the duty cycle on
+                    // the previous disable.
+                    nameof(PowerBoxPort.Enabled) when pwm.Enabled => PowerBoxSDK.MASK_PORT_ENABLE | PowerBoxSDK.MASK_PORT_POWER,
                     nameof(PowerBoxPort.Enabled) => PowerBoxSDK.MASK_PORT_ENABLE,
                     nameof(PowerBoxPWMPort.SetPower) => PowerBoxSDK.MASK_PORT_POWER,
                     _ => 0
