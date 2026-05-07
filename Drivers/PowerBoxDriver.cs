@@ -692,7 +692,7 @@ namespace NINA.PINS.Drivers
 
                         // Update 5V current
                         _supply5A = 0.0;
-                        foreach (var port in USBPorts.Ports)
+                        foreach (var port in USBPorts.Ports.Take(_actualUSBPortCount))
                         {
                             _supply5A += port.Current;
                         }
@@ -989,7 +989,7 @@ namespace NINA.PINS.Drivers
 
         private void SubscribeToPortChanges()
         {
-            foreach (var port in PowerPorts.Ports)
+            foreach (var port in PowerPorts.Ports.Take(_actualPowerPortCount))
             {
                 port.PropertyChanged += (s, e) =>
                 {
@@ -1022,7 +1022,7 @@ namespace NINA.PINS.Drivers
                 };
             }
 
-            foreach (var port in USBPorts.Ports)
+            foreach (var port in USBPorts.Ports.Take(_actualUSBPortCount))
             {
                 port.PropertyChanged += (s, e) =>
                 {
@@ -1050,7 +1050,7 @@ namespace NINA.PINS.Drivers
                 };
             }
 
-            foreach (var port in DewPorts.Ports)
+            foreach (var port in DewPorts.Ports.Take(_actualDewPortCount))
             {
                 port.PropertyChanged += (s, e) =>
                 {
@@ -1081,6 +1081,8 @@ namespace NINA.PINS.Drivers
                 };
             }
 
+            if (_actualBuckPortCount > 0)
+            {
             var buck = BuckPorts.Ports[0];
             buck.PropertyChanged += (s, e) =>
             {
@@ -1106,7 +1108,10 @@ namespace NINA.PINS.Drivers
                     }
                 }
             };
+            } // end Buck subscribe
 
+            if (_actualPWMPortCount > 0)
+            {
             var pwm = PWMPorts.Ports[0];
             pwm.PropertyChanged += (s, e) =>
             {
@@ -1139,6 +1144,7 @@ namespace NINA.PINS.Drivers
                     }
                 }
             };
+            } // end PWM subscribe
         }
 
         private JObject Load(string uuid)
@@ -1383,8 +1389,8 @@ namespace NINA.PINS.Drivers
                         adjPortConfig = new JObject();
                         hubConfig["AdjPort"] = adjPortConfig;
                     }
-                    adjPortConfig["Port1"] = BuckPorts.Ports[0].Name;
-                    adjPortConfig["Port2"] = PWMPorts.Ports[0].Name;
+                    adjPortConfig["Port1"] = _actualBuckPortCount > 0 ? BuckPorts.Ports[0].Name : string.Empty;
+                    adjPortConfig["Port2"] = _actualPWMPortCount > 0 ? PWMPorts.Ports[0].Name : string.Empty;
 
                     // Update the config in jsonObj
                     if (jsonObj.ContainsKey(Id))
@@ -1748,20 +1754,20 @@ namespace NINA.PINS.Drivers
                 // Enable UI
                 IsEnabledUI = true;
 
-                for (int i = 0; i < PowerPorts.Ports.Count; i++)
+                for (int i = 0; i < _actualPowerPortCount; i++)
                 {
                     RefreshPowerPortConfig(i);
                 }
-                for (int i = 0; i < USBPorts.Ports.Count; i++)
+                for (int i = 0; i < _actualUSBPortCount; i++)
                 {
                     RefreshUSBPortConfig(i);
                 }
-                for (int i = 0; i < DewPorts.Ports.Count; i++)
+                for (int i = 0; i < _actualDewPortCount; i++)
                 {
                     RefreshDewPortConfig(i);
                 }
-                RefreshBuckPortConfig();
-                RefreshPWMPortConfig();
+                if (_actualBuckPortCount > 0) RefreshBuckPortConfig();
+                if (_actualPWMPortCount > 0) RefreshPWMPortConfig();
                 RefreshWiFiConfig();
                 RaiseAllPropertiesChanged();
             }
@@ -1792,20 +1798,20 @@ namespace NINA.PINS.Drivers
                 // Enable UI
                 IsEnabledUI = true;
 
-                for (int i = 0; i < PowerPorts.Ports.Count; i++)
+                for (int i = 0; i < _actualPowerPortCount; i++)
                 {
                     RefreshPowerPortConfig(i);
                 }
-                for (int i = 0; i < USBPorts.Ports.Count; i++)
+                for (int i = 0; i < _actualUSBPortCount; i++)
                 {
                     RefreshUSBPortConfig(i);
                 }
-                for (int i = 0; i < DewPorts.Ports.Count; i++)
+                for (int i = 0; i < _actualDewPortCount; i++)
                 {
                     RefreshDewPortConfig(i);
                 }
-                RefreshBuckPortConfig();
-                RefreshPWMPortConfig();
+                if (_actualBuckPortCount > 0) RefreshBuckPortConfig();
+                if (_actualPWMPortCount > 0) RefreshPWMPortConfig();
                 RefreshWiFiConfig();
                 RaiseAllPropertiesChanged();
             }
