@@ -806,11 +806,11 @@ namespace NINA.PINS.Drivers
 
             // Power hub
             Logger.Trace("Configuring power hub switches...");
-            foreach (var port in PowerPorts.Ports)
+            foreach (var port in PowerPorts.Ports.Take(_actualPowerPortCount))
             {
-                if (port.Index == 0)
+                if (port.ReadOnly)
                 {
-                    Switches.Add(new PowerBoxSwitch(() => port.Name, () => "12V #1: always on (Current [A])", () => port.Current, switchId));
+                    Switches.Add(new PowerBoxSwitch(() => port.Name, () => $"12V #{port.Index + 1}: always on (Current [A])", () => port.Current, switchId));
                 }
                 else
                 {
@@ -826,21 +826,32 @@ namespace NINA.PINS.Drivers
 
             // USB hub
             Logger.Trace("Configuring USB hub switches...");
-            foreach (var port in USBPorts.Ports)
+            foreach (var port in USBPorts.Ports.Take(_actualUSBPortCount))
             {
+                if (port.ReadOnly)
+                {
+                    Switches.Add(new PowerBoxSwitch(
+                        () => port.Name,
+                        () => $"USB #{port.Index + 1}: {port.Current}A",
+                        () => port.Current,
+                        switchId));
+                }
+                else
+                {
                 Switches.Add(new PowerBoxWritableSwitch(
                     () => port.Name,
                     () => $"USB #{port.Index + 1}: {(port.Enabled ? port.Current : 0)}A",
                     () => port.Enabled ? 1 : 0,
                     (value) => port.Enabled = value != 0,
                     switchId));
+                }
                 switchId++;
             }
 
             // Dew hub - auto dew threshold
             Logger.Trace("Configuring Dew hub switches...");
 
-            foreach (var port in DewPorts.Ports)
+            foreach (var port in DewPorts.Ports.Take(_actualDewPortCount))
             {
                 Switches.Add(new PowerBoxWritableSwitch(
                     () => $"{port.Name} auto dew threshold",
@@ -852,7 +863,7 @@ namespace NINA.PINS.Drivers
             }
 
             // Dew hub - auto mode
-            foreach (var port in DewPorts.Ports)
+            foreach (var port in DewPorts.Ports.Take(_actualDewPortCount))
             {
                 Switches.Add(new PowerBoxWritableSwitch(
                     () => $"{port.Name} auto mode",
@@ -864,7 +875,7 @@ namespace NINA.PINS.Drivers
             }
 
             // Dew hub
-            foreach (var port in DewPorts.Ports)
+            foreach (var port in DewPorts.Ports.Take(_actualDewPortCount))
             {
                 Switches.Add(new PowerBoxWritableSwitch(
                     () => port.Name,
@@ -898,6 +909,8 @@ namespace NINA.PINS.Drivers
             }
 
             // Buck port
+            if (_actualBuckPortCount > 0)
+            {
             var buckPort = BuckPorts.Ports[0];
             Switches.Add(new PowerBoxWritableSwitch(
                             () => buckPort.Name,
@@ -930,8 +943,11 @@ namespace NINA.PINS.Drivers
                             buckPort.MaxVoltage,
                             0.1));
             switchId++;
+            } // end Buck port
 
             // PWM port
+            if (_actualPWMPortCount > 0)
+            {
             var pwmPort = PWMPorts.Ports[0];
             Switches.Add(new PowerBoxWritableSwitch(
                 () => pwmPort.Name,
@@ -966,6 +982,7 @@ namespace NINA.PINS.Drivers
                 pwmPort.Resolution,
                 1));
             switchId++;
+            } // end PWM port
 
             Logger.Trace($"Total switches configured: {Switches.Count}");
         }
