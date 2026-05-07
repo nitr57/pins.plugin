@@ -989,7 +989,7 @@ namespace NINA.PINS.Drivers
 
         private void SubscribeToPortChanges()
         {
-            foreach (var port in PowerPorts.Ports.Take(_actualPowerPortCount))
+            foreach (var port in PowerPorts.Ports)
             {
                 port.PropertyChanged += (s, e) =>
                 {
@@ -1022,7 +1022,7 @@ namespace NINA.PINS.Drivers
                 };
             }
 
-            foreach (var port in USBPorts.Ports.Take(_actualUSBPortCount))
+            foreach (var port in USBPorts.Ports)
             {
                 port.PropertyChanged += (s, e) =>
                 {
@@ -1050,7 +1050,7 @@ namespace NINA.PINS.Drivers
                 };
             }
 
-            foreach (var port in DewPorts.Ports.Take(_actualDewPortCount))
+            foreach (var port in DewPorts.Ports)
             {
                 port.PropertyChanged += (s, e) =>
                 {
@@ -1081,8 +1081,6 @@ namespace NINA.PINS.Drivers
                 };
             }
 
-            if (_actualBuckPortCount > 0)
-            {
             var buck = BuckPorts.Ports[0];
             buck.PropertyChanged += (s, e) =>
             {
@@ -1108,10 +1106,7 @@ namespace NINA.PINS.Drivers
                     }
                 }
             };
-            } // end Buck subscribe
 
-            if (_actualPWMPortCount > 0)
-            {
             var pwm = PWMPorts.Ports[0];
             pwm.PropertyChanged += (s, e) =>
             {
@@ -1144,7 +1139,6 @@ namespace NINA.PINS.Drivers
                     }
                 }
             };
-            } // end PWM subscribe
         }
 
         private JObject Load(string uuid)
