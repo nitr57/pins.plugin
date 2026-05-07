@@ -707,6 +707,12 @@ namespace NINA.PINS.Drivers
                         _isHardwareUpdate.Value = false;
                     }
 
+                    // Refresh all switch values so the NINA Switches tab reflects the latest state
+                    foreach (var sw in Switches)
+                    {
+                        ((PowerBoxSwitch)sw).Poll();
+                    }
+
                     try
                     {
                         await Task.Delay(1000, pollingCts.Token).ConfigureAwait(false);
