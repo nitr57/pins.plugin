@@ -15,6 +15,15 @@ namespace NINA.PINS.Equipment {
             _valueSetter = valueSetter ?? (_ => throw new InvalidOperationException("This switch is read only."));
         }
 
+        public new bool Poll() {
+            bool result = base.Poll();
+            // Keep TargetValue in sync with the actual hardware value so that
+            // external changes (e.g. via the pins plugin UI) are reflected in
+            // the NINA switch/info endpoint and in any connected Vue front-end.
+            TargetValue = Value;
+            return result;
+        }
+
         public void SetValue() {
             _valueSetter(TargetValue);
         }
