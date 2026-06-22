@@ -796,6 +796,7 @@ namespace NINA.PINS.Drivers
         private void ScanForSwitches()
         {
             Logger.Trace("Scanning for switches...");
+            Switches.Clear();
 
             Switches.Add(new PowerBoxSwitch(() => "12V rail", () => "Supply [V]", () => _powerSupply.Supply12V, 0));
             Switches.Add(new PowerBoxSwitch(() => "Temperature", () => "Environment [°C]", () => Temperature, 1));
