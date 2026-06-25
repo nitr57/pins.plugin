@@ -29,7 +29,7 @@ namespace NINA.PINS.Equipment {
 
         public double Value { get; private set; }
 
-        public bool Poll() {
+        public virtual bool Poll() {
             Name = _nameGetter();
             Description = _descGetter();
             Value = _valueGetter();

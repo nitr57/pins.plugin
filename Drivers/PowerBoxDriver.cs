@@ -360,7 +360,7 @@ namespace NINA.PINS.Drivers
             try
             {
                 var ver = new StringBuilder(PowerBoxSDK.PB_VERSION_LEN);
-                if (PowerBoxSDK.PBGetSDKVersion(ver, ver.Capacity) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                if (PowerBoxSDK.PBGetSDKVersion(ver) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
                 {
                     DriverVersion = ver.ToString();
                 }
@@ -769,7 +769,10 @@ namespace NINA.PINS.Drivers
                 pollingCts?.Cancel();
                 try
                 {
-                    pollingTask?.Wait(1000);
+                    // Wait for the polling task to fully stop before closing the device,
+                    // otherwise in-flight PBGet*/PBSetConfig calls race the close and
+                    // operate on a closed (and possibly reused) device id.
+                    pollingTask?.Wait();
                 }
                 catch { }
 

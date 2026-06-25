@@ -128,7 +128,7 @@ namespace NINA.PINS.SDK
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_USB_PORTS)]
             public int[] overcurrent;
 
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_POWER_PORTS)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_USB_PORTS)]
             public int[] readOnly;
         }
 
@@ -385,6 +385,6 @@ namespace NINA.PINS.SDK
         public static extern PB_ERROR_TYPE PBFactoryReset(int id);
 
         [DllImport(DLL, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern PB_ERROR_TYPE PBGetSDKVersion(StringBuilder version, int size);
+        public static extern PB_ERROR_TYPE PBGetSDKVersion(StringBuilder version);
     }
 }

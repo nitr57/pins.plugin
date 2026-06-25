@@ -149,7 +149,10 @@ namespace NINA.PINS.Drivers {
             try {
                 pollingCts?.Cancel();
                 try {
-                    pollingTask?.Wait(1000);
+                    // Wait for the polling task to fully stop before closing the device,
+                    // otherwise in-flight status calls race the close and operate on a
+                    // closed (and possibly reused) device id.
+                    pollingTask?.Wait();
                 } catch { }
 
                 LensControlSDK.LCDeviceClose(deviceId);

@@ -15,7 +15,7 @@ namespace NINA.PINS.Equipment {
             _valueSetter = valueSetter ?? (_ => throw new InvalidOperationException("This switch is read only."));
         }
 
-        public new bool Poll() {
+        public override bool Poll() {
             bool result = base.Poll();
             // Keep TargetValue in sync with the actual hardware value so that
             // external changes (e.g. via the pins plugin UI) are reflected in
