@@ -28,6 +28,8 @@ namespace NINA.PINS.Drivers {
         private readonly object _sdkLock = new object();
         private CancellationTokenSource pollingCts;
         private Task pollingTask;
+        private int _consecutiveStatusFailures = 0;
+        private const int MaxConsecutiveStatusFailures = 5;
 
         public string Name { get; }
 
@@ -428,6 +430,7 @@ namespace NINA.PINS.Drivers {
                         MeteoStationSDK.MS_DEVICE_STATUS status;
                         lock (_sdkLock) {
                             if (MeteoStationSDK.MSDeviceGetStatus(deviceId, out status) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                                _consecutiveStatusFailures = 0;
                                 UpdateFromStatus(status);
 
                                 if (double.IsNaN(Temperature)) {
@@ -447,10 +450,20 @@ namespace NINA.PINS.Drivers {
                                         Logger.Trace($"Unable to fetch PowerBox data: {ex.Message}");
                                     }
                                 }
+                            } else {
+                                _consecutiveStatusFailures++;
                             }
                         }
                     } catch (Exception ex) {
-                        Notification.ShowError($"{ex.Message}");
+                        _consecutiveStatusFailures++;
+                        Logger.Error($"Error polling device status: {ex.Message}");
+                    }
+
+                    if (_consecutiveStatusFailures >= MaxConsecutiveStatusFailures) {
+                        Logger.Error($"{Name}: no response for {_consecutiveStatusFailures} consecutive polls. Treating device as disconnected.");
+                        Notification.ShowError($"{Name} stopped responding and was disconnected.");
+                        HandleDeviceLost();
+                        break;
                     }
 
                     try {
@@ -478,6 +491,22 @@ namespace NINA.PINS.Drivers {
                     pollingTask?.Wait();
                 } catch { }
 
+                lock (_sdkLock) {
+                    MeteoStationSDK.MSDeviceClose(deviceId);
+                }
+            } catch { } finally {
+                if (PINS.ConnectedMeteoStation == this) {
+                    PINS.ConnectedMeteoStation = null;
+                }
+                Connected = false;
+            }
+        }
+
+        // Called from within the polling loop itself when the device stops responding.
+        // Unlike Disconnect(), this must not cancel/wait on pollingTask - that would
+        // deadlock since we are running on that very task.
+        private void HandleDeviceLost() {
+            try {
                 lock (_sdkLock) {
                     MeteoStationSDK.MSDeviceClose(deviceId);
                 }

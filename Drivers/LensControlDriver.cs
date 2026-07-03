@@ -27,6 +27,8 @@ namespace NINA.PINS.Drivers {
         private readonly object _sdkLock = new object();
         private CancellationTokenSource pollingCts;
         private Task pollingTask;
+        private int _consecutiveStatusFailures = 0;
+        private const int MaxConsecutiveStatusFailures = 5;
 
         public string Name { get; }
 
@@ -134,11 +136,22 @@ namespace NINA.PINS.Drivers {
                         LensControlSDK.LC_DEVICE_STATUS status;
                         lock (_sdkLock) {
                             if (LensControlSDK.LCDeviceGetStatus(deviceId, out status) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
+                                _consecutiveStatusFailures = 0;
                                 UpdateFromStatus(status);
+                            } else {
+                                _consecutiveStatusFailures++;
                             }
                         }
                     } catch (Exception ex) {
-                        Notification.ShowError($"{ex.Message}");
+                        _consecutiveStatusFailures++;
+                        Logger.Error($"Error polling device status: {ex.Message}");
+                    }
+
+                    if (_consecutiveStatusFailures >= MaxConsecutiveStatusFailures) {
+                        Logger.Error($"{Name}: no response for {_consecutiveStatusFailures} consecutive polls. Treating device as disconnected.");
+                        Notification.ShowError($"{Name} stopped responding and was disconnected.");
+                        HandleDeviceLost();
+                        break;
                     }
 
                     try {
@@ -166,6 +179,22 @@ namespace NINA.PINS.Drivers {
                     pollingTask?.Wait();
                 } catch { }
 
+                lock (_sdkLock) {
+                    LensControlSDK.LCDeviceClose(deviceId);
+                }
+            } catch { } finally {
+                if (PINS.ConnectedLensControl == this) {
+                    PINS.ConnectedLensControl = null;
+                }
+                Connected = false;
+            }
+        }
+
+        // Called from within the polling loop itself when the device stops responding.
+        // Unlike Disconnect(), this must not cancel/wait on pollingTask - that would
+        // deadlock since we are running on that very task.
+        private void HandleDeviceLost() {
+            try {
                 lock (_sdkLock) {
                     LensControlSDK.LCDeviceClose(deviceId);
                 }

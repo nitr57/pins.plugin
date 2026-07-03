@@ -119,6 +119,8 @@ namespace NINA.PINS.Drivers
         private readonly AsyncLocal<bool> _isHardwareUpdate = new();
         private CancellationTokenSource pollingCts;
         private Task pollingTask;
+        private int _consecutiveStatusFailures = 0;
+        private const int MaxConsecutiveStatusFailures = 5;
         private PowerBoxPowerSupply _powerSupply;
         private PowerBoxPorts _powerPorts;
         private PowerBoxUSBPorts _usbPorts;
@@ -578,6 +580,7 @@ namespace NINA.PINS.Drivers
                                 PowerBoxSDK.PB_DEVICE_STATUS status;
                                 if (PowerBoxSDK.PBGetStatus(deviceId, out status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
                                 {
+                                    _consecutiveStatusFailures = 0;
                                     UpdateFromDeviceStatus(status);
 
                                     if (double.IsNaN(_temperature) || status.extSensor != 0)
@@ -613,10 +616,15 @@ namespace NINA.PINS.Drivers
                                         }
                                     }
                                 }
+                                else
+                                {
+                                    _consecutiveStatusFailures++;
+                                }
                             }
                             catch (Exception ex)
                             {
-                                Notification.ShowError($"{ex.Message}");
+                                _consecutiveStatusFailures++;
+                                Logger.Error($"Error polling device status: {ex.Message}");
                             }
 
                             // Poll power supply status
@@ -630,7 +638,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Notification.ShowError($"{ex.Message}");
+                                Logger.Error($"Error polling status: {ex.Message}");
                             }
 
                             // Poll power port status
@@ -644,7 +652,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Notification.ShowError($"{ex.Message}");
+                                Logger.Error($"Error polling status: {ex.Message}");
                             }
 
                             // Poll USB port status
@@ -658,7 +666,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Notification.ShowError($"{ex.Message}");
+                                Logger.Error($"Error polling status: {ex.Message}");
                             }
 
                             // Poll Dew port status
@@ -672,7 +680,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Notification.ShowError($"{ex.Message}");
+                                Logger.Error($"Error polling status: {ex.Message}");
                             }
 
                             // Poll Buck port status
@@ -686,7 +694,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Notification.ShowError($"{ex.Message}");
+                                Logger.Error($"Error polling status: {ex.Message}");
                             }
 
                             // Poll PWM port status
@@ -700,7 +708,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Notification.ShowError($"{ex.Message}");
+                                Logger.Error($"Error polling status: {ex.Message}");
                             }
 
                             // Poll WiFi status
@@ -714,7 +722,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Notification.ShowError($"{ex.Message}");
+                                Logger.Error($"Error polling status: {ex.Message}");
                             }
 
                             // Update 5V current
@@ -733,6 +741,14 @@ namespace NINA.PINS.Drivers
                     finally
                     {
                         _isHardwareUpdate.Value = false;
+                    }
+
+                    if (_consecutiveStatusFailures >= MaxConsecutiveStatusFailures)
+                    {
+                        Logger.Error($"{Name}: no response for {_consecutiveStatusFailures} consecutive polls. Treating device as disconnected.");
+                        Notification.ShowError($"{Name} stopped responding and was disconnected.");
+                        HandleDeviceLost();
+                        break;
                     }
 
                     // Refresh all switch values so the NINA Switches tab reflects the latest state
@@ -813,6 +829,29 @@ namespace NINA.PINS.Drivers
             finally
             {
                 // Unregister this PowerBox instance
+                if (PINS.ConnectedPowerBox == this)
+                {
+                    PINS.ConnectedPowerBox = null;
+                }
+                Connected = false;
+            }
+        }
+
+        // Called from within the polling loop itself when the device stops responding.
+        // Unlike Disconnect(), this must not cancel/wait on pollingTask - that would
+        // deadlock since we are running on that very task.
+        private void HandleDeviceLost()
+        {
+            try
+            {
+                lock (_sdkLock)
+                {
+                    PowerBoxSDK.PBClose(deviceId);
+                }
+            }
+            catch { }
+            finally
+            {
                 if (PINS.ConnectedPowerBox == this)
                 {
                     PINS.ConnectedPowerBox = null;
