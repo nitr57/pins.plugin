@@ -43,7 +43,8 @@ namespace NINA.PINS.Drivers {
 
         public string DriverVersion { get; private set; }
 
-        public bool Connected { get; private set; }
+        private bool _connected;
+        public bool Connected { get => _connected; private set => SetProperty(ref _connected, value); }
 
         public IList<string> SupportedActions => new List<string>();
 
