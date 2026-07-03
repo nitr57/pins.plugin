@@ -262,7 +262,11 @@ namespace NINA.PINS.Equipment {
             OnPropertyChanged(nameof(Resolution));
         }
 
-        internal override void UpdateFromConfig(int enabled, int power) {
+        // Not an override of PowerBoxPort.UpdateFromConfig(enabled, bootstate) - PWM ports have
+        // no boot-state concept, and the second parameter here means "power" instead. Keeping
+        // it as a same-signature override would silently corrupt SetPower if anything ever called
+        // it polymorphically through a PowerBoxPort reference expecting boot-state semantics.
+        internal void UpdatePWMFromConfig(int enabled, int power) {
             base.UpdateFromConfig(enabled, 0);
 
             _setPower = power;

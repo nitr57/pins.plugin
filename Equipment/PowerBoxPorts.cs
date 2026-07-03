@@ -106,7 +106,7 @@ namespace NINA.PINS.Equipment
         {
             if (GetPort(0) is PowerBoxPWMPort pwmPort)
             {
-                pwmPort.UpdateFromConfig(config.enabled, config.power);
+                pwmPort.UpdatePWMFromConfig(config.enabled, config.power);
             }
         }
     }
