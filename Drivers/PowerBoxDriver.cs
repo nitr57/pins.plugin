@@ -2033,9 +2033,13 @@ namespace NINA.PINS.Drivers
 
         private string _wifiPASS;
 
+        // Getter is intentionally private: ninaAPI's switch/get-settings endpoint reflects every
+        // *readable* public property into its HTTP response, which would otherwise leak the WiFi
+        // password. The setter stays public so the API's set-setting endpoint (and the WiFi UI)
+        // can still configure it; only in-class code (WiFiConnect) can read the value back.
         public string WiFiPASS
         {
-            get => _wifiPASS;
+            private get => _wifiPASS;
             set
             {
                 if (_wifiPASS != value)
