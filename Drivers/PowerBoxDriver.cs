@@ -770,22 +770,30 @@ namespace NINA.PINS.Drivers
 
             // We need to wait for the status updates to arrive, so we simply loop a bit
             // Add a timeout to prevent infinite waiting (max 5 seconds)
+            bool NotYetInitialized() =>
+                (_actualDewPortCount > 0 && DewPorts.Ports.Count > 0 && DewPorts.Ports[0].Resolution == 0)
+                || (_actualBuckPortCount > 0 && BuckPorts.Ports.Count > 0 && BuckPorts.Ports[0].MaxVoltage < 1.0)
+                || (_actualPWMPortCount > 0 && PWMPorts.Ports.Count > 0 && PWMPorts.Ports[0].Resolution == 0);
+
             var waitTimeout = DateTime.Now.AddSeconds(5);
-            while (((_actualDewPortCount > 0 && DewPorts.Ports[0].Resolution == 0)
-                || (_actualBuckPortCount > 0 && BuckPorts.Ports[0].MaxVoltage < 1.0)
-                || (_actualPWMPortCount > 0 && PWMPorts.Ports[0].Resolution == 0))
+            while (NotYetInitialized()
                 && !token.IsCancellationRequested
                 && DateTime.Now < waitTimeout)
             {
-                Thread.Sleep(100);
+                try
+                {
+                    await Task.Delay(100, token).ConfigureAwait(false);
+                }
+                catch (TaskCanceledException)
+                {
+                    break;
+                }
             }
 
             // Check if we timed out before all values were initialized
-            if ((_actualDewPortCount > 0 && DewPorts.Ports[0].Resolution == 0)
-                || (_actualBuckPortCount > 0 && BuckPorts.Ports[0].MaxVoltage < 1.0)
-                || (_actualPWMPortCount > 0 && PWMPorts.Ports[0].Resolution == 0))
+            if (NotYetInitialized())
             {
-                var errorMsg = $"PowerBox connection failed: Timeout waiting for device status initialization. Dew Resolution: {DewPorts.Ports[0].Resolution}, Buck MaxVoltage: {BuckPorts.Ports[0].MaxVoltage}, PWM Resolution: {PWMPorts.Ports[0].Resolution}";
+                var errorMsg = $"PowerBox connection failed: Timeout waiting for device status initialization. Dew Resolution: {(DewPorts.Ports.Count > 0 ? DewPorts.Ports[0].Resolution : 0)}, Buck MaxVoltage: {(BuckPorts.Ports.Count > 0 ? BuckPorts.Ports[0].MaxVoltage : 0)}, PWM Resolution: {(PWMPorts.Ports.Count > 0 ? PWMPorts.Ports[0].Resolution : 0)}";
                 Logger.Error(errorMsg);
                 Notification.ShowError(errorMsg);
 
