@@ -30,6 +30,13 @@ namespace NINA.PINS.Drivers {
         private int _consecutiveStatusFailures = 0;
         private const int MaxConsecutiveStatusFailures = 5;
 
+        // Move() polls for the exact target position. If the firmware clamps to a
+        // reachable position (e.g. requested position beyond maxPosition) or the lens
+        // stalls, that exact match may never happen - guard with a stall counter
+        // (consecutive polls with no position change) and a hard timeout.
+        private const int MoveTimeoutMs = 60000;
+        private const int MaxStalledPolls = 5;
+
         public string Name { get; }
 
         public string DisplayName => Name;
@@ -319,14 +326,40 @@ namespace NINA.PINS.Drivers {
                     }
                 }
 
+                var deadline = DateTime.UtcNow.AddMilliseconds(MoveTimeoutMs);
+                int lastPosition = _position;
+                int stalledPolls = 0;
+
                 while (!ct.IsCancellationRequested) {
                     LensControlSDK.LC_DEVICE_STATUS status;
+                    bool gotStatus;
                     lock (_sdkLock) {
-                        if (LensControlSDK.LCDeviceGetStatus(deviceId, out status) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
-                            UpdateFromStatus(status);
-                            if (status.position == position) break;
+                        gotStatus = LensControlSDK.LCDeviceGetStatus(deviceId, out status) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS;
+                    }
+
+                    if (gotStatus) {
+                        UpdateFromStatus(status);
+                        if (status.position == position) break;
+
+                        if (status.position == lastPosition) {
+                            stalledPolls++;
+                            if (stalledPolls >= MaxStalledPolls) {
+                                Logger.Error($"LensControl move stalled at position {status.position} (target {position}).");
+                                Notification.ShowError("LensControl move stalled before reaching target position.");
+                                break;
+                            }
+                        } else {
+                            lastPosition = status.position;
+                            stalledPolls = 0;
                         }
                     }
+
+                    if (DateTime.UtcNow >= deadline) {
+                        Logger.Error($"LensControl move timed out before reaching target position {position}.");
+                        Notification.ShowError("LensControl move timed out before reaching target position.");
+                        break;
+                    }
+
                     await Task.Delay(waitInMs, ct).ConfigureAwait(false);
                 }
             } catch (TaskCanceledException) {
