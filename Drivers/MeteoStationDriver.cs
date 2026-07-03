@@ -25,6 +25,7 @@ namespace NINA.PINS.Drivers {
         }
 
         private readonly int deviceId;
+        private readonly object _sdkLock = new object();
         private CancellationTokenSource pollingCts;
         private Task pollingTask;
 
@@ -66,9 +67,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_UPDATE_RATE;
                     config.updateRate = value;
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _updateRate = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _updateRate = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -83,9 +86,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_TEMPERATURE_OFFSET;
                     config.temperatureOffset = Convert.ToSingle(value);
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _temperatureOffset = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _temperatureOffset = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -100,9 +105,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_HUMIDITY_OFFSET;
                     config.humidityOffset = Convert.ToSingle(value);
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _humidityOffset = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _humidityOffset = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -138,9 +145,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_LUX_SCALING;
                     config.luxScaling = Convert.ToSingle(value);
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _luxScalingFactor = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _luxScalingFactor = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -155,9 +164,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_CLOUD_K1;
                     config.cloudK1 = value;
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _cloudK1 = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _cloudK1 = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -172,9 +183,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_CLOUD_K2;
                     config.cloudK2 = value;
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _cloudK2 = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _cloudK2 = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -189,9 +202,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_CLOUD_K3;
                     config.cloudK3 = value;
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _cloudK3 = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _cloudK3 = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -206,9 +221,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_CLOUD_K4;
                     config.cloudK4 = value;
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _cloudK4 = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _cloudK4 = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -223,9 +240,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_CLOUD_K5;
                     config.cloudK5 = value;
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _cloudK5 = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _cloudK5 = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -240,9 +259,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_CLOUD_K6;
                     config.cloudK6 = value;
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _cloudK6 = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _cloudK6 = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -257,9 +278,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_CLOUD_K7;
                     config.cloudK7 = value;
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _cloudK7 = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _cloudK7 = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -274,9 +297,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_CLOUD_TO;
                     config.cloudTemperatureOvercast = value;
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _cloudCTO = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _cloudCTO = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -291,9 +316,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_CLOUD_TC;
                     config.cloudTemperatureClear = value;
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _cloudCTC = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _cloudCTC = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -308,9 +335,11 @@ namespace NINA.PINS.Drivers {
                     MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
                     config.mask = MeteoStationSDK.MS_CONFIG_MASK.MASK_MS_CLOUD_FP;
                     config.cloudFlagPercent = value;
-                    if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                        _cloudCFP = value;
-                        RaisePropertyChanged();
+                    lock (_sdkLock) {
+                        if (MeteoStationSDK.MSDeviceSetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                            _cloudCFP = value;
+                            RaisePropertyChanged();
+                        }
                     }
                 }
             }
@@ -333,18 +362,22 @@ namespace NINA.PINS.Drivers {
         }
 
         public async Task<bool> Connect(CancellationToken token) {
-            if (MeteoStationSDK.MSDeviceOpen(deviceId) != MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                Connected = false;
-                return Connected;
+            lock (_sdkLock) {
+                if (MeteoStationSDK.MSDeviceOpen(deviceId) != MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                    Connected = false;
+                    return Connected;
+                }
             }
 
             // Try get SDK version
             try {
                 var ver = new StringBuilder(MeteoStationSDK.MS_VERSION_LEN);
-                if (MeteoStationSDK.MSGetSDKVersion(ver, ver.Capacity) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                    DriverVersion = ver.ToString();
-                } else {
-                    DriverVersion = "unknown";
+                lock (_sdkLock) {
+                    if (MeteoStationSDK.MSGetSDKVersion(ver, ver.Capacity) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                        DriverVersion = ver.ToString();
+                    } else {
+                        DriverVersion = "unknown";
+                    }
                 }
             } catch (Exception ex) {
                 Notification.ShowError($"{ex.Message}");
@@ -354,17 +387,19 @@ namespace NINA.PINS.Drivers {
             // Try get Device version
             try {
                 MeteoStationSDK.MS_VERSION version = new MeteoStationSDK.MS_VERSION();
-                if (MeteoStationSDK.MSDeviceGetVersion(deviceId, out version) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                    // UUID
-                    _uniqueId = version.uuid;
+                lock (_sdkLock) {
+                    if (MeteoStationSDK.MSDeviceGetVersion(deviceId, out version) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                        // UUID
+                        _uniqueId = version.uuid;
 
-                    // Firmware
-                    uint major = (version.firmware >> 10) & 0x3F;
-                    uint minor = (version.firmware >> 5) & 0x1F;
-                    uint patch = version.firmware & 0x1F;
-                    _firmware = $"{major}.{minor}.{patch}";
+                        // Firmware
+                        uint major = (version.firmware >> 10) & 0x3F;
+                        uint minor = (version.firmware >> 5) & 0x1F;
+                        uint patch = version.firmware & 0x1F;
+                        _firmware = $"{major}.{minor}.{patch}";
 
-                    OnPropertyChanged(nameof(UniqueId));
+                        OnPropertyChanged(nameof(UniqueId));
+                    }
                 }
             } catch (Exception ex) {
                 Notification.ShowError($"{ex.Message}");
@@ -374,8 +409,10 @@ namespace NINA.PINS.Drivers {
             // Fetch initial configuration
             try {
                 MeteoStationSDK.MS_DEVICE_CONFIG config = new MeteoStationSDK.MS_DEVICE_CONFIG();
-                if (MeteoStationSDK.MSDeviceGetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                    UpdateFromConfig(config);
+                lock (_sdkLock) {
+                    if (MeteoStationSDK.MSDeviceGetConfig(deviceId, ref config) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                        UpdateFromConfig(config);
+                    }
                 }
             } catch (Exception ex) {
                 Notification.ShowError($"{ex.Message}");
@@ -389,24 +426,26 @@ namespace NINA.PINS.Drivers {
                 while (!pollingCts.Token.IsCancellationRequested) {
                     try {
                         MeteoStationSDK.MS_DEVICE_STATUS status;
-                        if (MeteoStationSDK.MSDeviceGetStatus(deviceId, out status) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                            UpdateFromStatus(status);
+                        lock (_sdkLock) {
+                            if (MeteoStationSDK.MSDeviceGetStatus(deviceId, out status) == MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                                UpdateFromStatus(status);
 
-                            if (double.IsNaN(Temperature)) {
-                                // Try to fetch from connected PowerBox if available
-                                try {
-                                    var powerBox = PINS.ConnectedPowerBox;
-                                    if (powerBox?.Connected == true && !double.IsNaN(powerBox.Temperature) && !powerBox.ExtSensor) {
-                                        _temperature = powerBox.Temperature;
-                                        _humidity = powerBox.Humidity;
-                                        _dewPoint = powerBox.DewPoint;
-                                        OnPropertyChanged(nameof(Temperature));
-                                        OnPropertyChanged(nameof(Humidity));
-                                        OnPropertyChanged(nameof(DewPoint));
-                                        Logger.Trace("Fetched environment data from PowerBox.");
+                                if (double.IsNaN(Temperature)) {
+                                    // Try to fetch from connected PowerBox if available
+                                    try {
+                                        var powerBox = PINS.ConnectedPowerBox;
+                                        if (powerBox?.Connected == true && !double.IsNaN(powerBox.Temperature) && !powerBox.ExtSensor) {
+                                            _temperature = powerBox.Temperature;
+                                            _humidity = powerBox.Humidity;
+                                            _dewPoint = powerBox.DewPoint;
+                                            OnPropertyChanged(nameof(Temperature));
+                                            OnPropertyChanged(nameof(Humidity));
+                                            OnPropertyChanged(nameof(DewPoint));
+                                            Logger.Trace("Fetched environment data from PowerBox.");
+                                        }
+                                    } catch (Exception ex) {
+                                        Logger.Trace($"Unable to fetch PowerBox data: {ex.Message}");
                                     }
-                                } catch (Exception ex) {
-                                    Logger.Trace($"Unable to fetch PowerBox data: {ex.Message}");
                                 }
                             }
                         }
@@ -439,7 +478,9 @@ namespace NINA.PINS.Drivers {
                     pollingTask?.Wait();
                 } catch { }
 
-                MeteoStationSDK.MSDeviceClose(deviceId);
+                lock (_sdkLock) {
+                    MeteoStationSDK.MSDeviceClose(deviceId);
+                }
             } catch { } finally {
                 if (PINS.ConnectedMeteoStation == this) {
                     PINS.ConnectedMeteoStation = null;
@@ -536,10 +577,12 @@ namespace NINA.PINS.Drivers {
 
             try {
                 // Trigger reboot
-                if (MeteoStationSDK.MSDeviceRestart(deviceId) != MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                    Notification.ShowError("Failed to reboot MeteoStation device.");
-                    Logger.Error("Failed to reboot device.");
-                    return;
+                lock (_sdkLock) {
+                    if (MeteoStationSDK.MSDeviceRestart(deviceId) != MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                        Notification.ShowError("Failed to reboot MeteoStation device.");
+                        Logger.Error("Failed to reboot device.");
+                        return;
+                    }
                 }
 
                 // Wait for device to reboot
@@ -563,10 +606,12 @@ namespace NINA.PINS.Drivers {
 
             try {
                 // Trigger reboot
-                if (MeteoStationSDK.MSDeviceFactoryReset(deviceId) != MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
-                    Notification.ShowError("Failed to reset MeteoStation device.");
-                    Logger.Error("Failed to reset device.");
-                    return;
+                lock (_sdkLock) {
+                    if (MeteoStationSDK.MSDeviceFactoryReset(deviceId) != MeteoStationSDK.MS_ERROR_TYPE.MS_SUCCESS) {
+                        Notification.ShowError("Failed to reset MeteoStation device.");
+                        Logger.Error("Failed to reset device.");
+                        return;
+                    }
                 }
 
                 // Wait for device to reset

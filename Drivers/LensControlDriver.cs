@@ -24,6 +24,7 @@ namespace NINA.PINS.Drivers {
         }
 
         private readonly int deviceId;
+        private readonly object _sdkLock = new object();
         private CancellationTokenSource pollingCts;
         private Task pollingTask;
 
@@ -70,18 +71,22 @@ namespace NINA.PINS.Drivers {
         }
 
         public async Task<bool> Connect(CancellationToken token) {
-            if (LensControlSDK.LCDeviceOpen(deviceId) != LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
-                Connected = false;
-                return Connected;
+            lock (_sdkLock) {
+                if (LensControlSDK.LCDeviceOpen(deviceId) != LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
+                    Connected = false;
+                    return Connected;
+                }
             }
 
             // Try get SDK version
             try {
                 var ver = new StringBuilder(LensControlSDK.LC_VERSION_LEN);
-                if (LensControlSDK.LCGetSDKVersion(ver, ver.Capacity) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
-                    DriverVersion = ver.ToString();
-                } else {
-                    DriverVersion = "unknown";
+                lock (_sdkLock) {
+                    if (LensControlSDK.LCGetSDKVersion(ver, ver.Capacity) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
+                        DriverVersion = ver.ToString();
+                    } else {
+                        DriverVersion = "unknown";
+                    }
                 }
             } catch (Exception ex) {
                 Notification.ShowError($"{ex.Message}");
@@ -91,15 +96,17 @@ namespace NINA.PINS.Drivers {
             // Try get Device version
             try {
                 LensControlSDK.LC_VERSION version = new LensControlSDK.LC_VERSION();
-                if (LensControlSDK.LCDeviceGetVersion(deviceId, out version) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
-                    _uniqueId = version.uuid;
+                lock (_sdkLock) {
+                    if (LensControlSDK.LCDeviceGetVersion(deviceId, out version) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
+                        _uniqueId = version.uuid;
 
-                    uint major = (version.firmware >> 10) & 0x3F;
-                    uint minor = (version.firmware >> 5) & 0x1F;
-                    uint patch = version.firmware & 0x1F;
-                    _firmware = $"{major}.{minor}.{patch}";
+                        uint major = (version.firmware >> 10) & 0x3F;
+                        uint minor = (version.firmware >> 5) & 0x1F;
+                        uint patch = version.firmware & 0x1F;
+                        _firmware = $"{major}.{minor}.{patch}";
 
-                    OnPropertyChanged(nameof(UniqueId));
+                        OnPropertyChanged(nameof(UniqueId));
+                    }
                 }
             } catch (Exception ex) {
                 Notification.ShowError($"{ex.Message}");
@@ -109,8 +116,10 @@ namespace NINA.PINS.Drivers {
             // Fetch initial status
             try {
                 LensControlSDK.LC_DEVICE_STATUS status;
-                if (LensControlSDK.LCDeviceGetStatus(deviceId, out status) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
-                    UpdateFromStatus(status);
+                lock (_sdkLock) {
+                    if (LensControlSDK.LCDeviceGetStatus(deviceId, out status) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
+                        UpdateFromStatus(status);
+                    }
                 }
             } catch (Exception ex) {
                 Notification.ShowError($"{ex.Message}");
@@ -123,8 +132,10 @@ namespace NINA.PINS.Drivers {
                 while (!pollingCts.Token.IsCancellationRequested) {
                     try {
                         LensControlSDK.LC_DEVICE_STATUS status;
-                        if (LensControlSDK.LCDeviceGetStatus(deviceId, out status) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
-                            UpdateFromStatus(status);
+                        lock (_sdkLock) {
+                            if (LensControlSDK.LCDeviceGetStatus(deviceId, out status) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
+                                UpdateFromStatus(status);
+                            }
                         }
                     } catch (Exception ex) {
                         Notification.ShowError($"{ex.Message}");
@@ -155,7 +166,9 @@ namespace NINA.PINS.Drivers {
                     pollingTask?.Wait();
                 } catch { }
 
-                LensControlSDK.LCDeviceClose(deviceId);
+                lock (_sdkLock) {
+                    LensControlSDK.LCDeviceClose(deviceId);
+                }
             } catch { } finally {
                 if (PINS.ConnectedLensControl == this) {
                     PINS.ConnectedLensControl = null;
@@ -237,9 +250,11 @@ namespace NINA.PINS.Drivers {
         public int FocalLength => _focalLength;
 
         public bool Calibrate() {
-            if (LensControlSDK.LCDeviceCalibrate(deviceId) != LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
-                Notification.ShowError("Failed to calibrate LensControl.");
-                return false;
+            lock (_sdkLock) {
+                if (LensControlSDK.LCDeviceCalibrate(deviceId) != LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
+                    Notification.ShowError("Failed to calibrate LensControl.");
+                    return false;
+                }
             }
             return true;
         }
@@ -249,9 +264,11 @@ namespace NINA.PINS.Drivers {
                 mask = LensControlSDK.LC_CONFIG_MASK.MASK_LC_APERTURE,
                 aperture = aperture
             };
-            if (LensControlSDK.LCDeviceSetConfig(deviceId, ref config) != LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
-                Notification.ShowError("Failed to set aperture.");
-                return false;
+            lock (_sdkLock) {
+                if (LensControlSDK.LCDeviceSetConfig(deviceId, ref config) != LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
+                    Notification.ShowError("Failed to set aperture.");
+                    return false;
+                }
             }
             _aperture = aperture;
             OnPropertyChanged(nameof(Aperture));
@@ -266,16 +283,20 @@ namespace NINA.PINS.Drivers {
                     mask = LensControlSDK.LC_CONFIG_MASK.MASK_LC_POSITION,
                     position = position
                 };
-                if (LensControlSDK.LCDeviceSetConfig(deviceId, ref config) != LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
-                    Notification.ShowError("Failed to move LensControl.");
-                    return;
+                lock (_sdkLock) {
+                    if (LensControlSDK.LCDeviceSetConfig(deviceId, ref config) != LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
+                        Notification.ShowError("Failed to move LensControl.");
+                        return;
+                    }
                 }
 
                 while (!ct.IsCancellationRequested) {
                     LensControlSDK.LC_DEVICE_STATUS status;
-                    if (LensControlSDK.LCDeviceGetStatus(deviceId, out status) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
-                        UpdateFromStatus(status);
-                        if (status.position == position) break;
+                    lock (_sdkLock) {
+                        if (LensControlSDK.LCDeviceGetStatus(deviceId, out status) == LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
+                            UpdateFromStatus(status);
+                            if (status.position == position) break;
+                        }
                     }
                     await Task.Delay(waitInMs, ct).ConfigureAwait(false);
                 }
@@ -294,7 +315,9 @@ namespace NINA.PINS.Drivers {
                 mask = LensControlSDK.LC_CONFIG_MASK.MASK_LC_POSITION,
                 position = _position
             };
-            LensControlSDK.LCDeviceSetConfig(deviceId, ref config);
+            lock (_sdkLock) {
+                LensControlSDK.LCDeviceSetConfig(deviceId, ref config);
+            }
             _isMoving = false;
             OnPropertyChanged(nameof(IsMoving));
         }
@@ -318,10 +341,12 @@ namespace NINA.PINS.Drivers {
             IsEnabledUI = false;
 
             try {
-                if (LensControlSDK.LCDeviceRestart(deviceId) != LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
-                    Notification.ShowError("Failed to reboot LensControl device.");
-                    Logger.Error("Failed to reboot device.");
-                    return;
+                lock (_sdkLock) {
+                    if (LensControlSDK.LCDeviceRestart(deviceId) != LensControlSDK.LC_ERROR_TYPE.LC_SUCCESS) {
+                        Notification.ShowError("Failed to reboot LensControl device.");
+                        Logger.Error("Failed to reboot device.");
+                        return;
+                    }
                 }
 
                 await Task.Delay(1000);
