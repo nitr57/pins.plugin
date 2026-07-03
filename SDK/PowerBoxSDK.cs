@@ -376,7 +376,7 @@ namespace NINA.PINS.SDK
         public static extern PB_ERROR_TYPE PBGetVersion(int id, out PB_VERSION version);
 
         [DllImport(DLL, CallingConvention = CallingConvention.Cdecl)]
-        public static extern PB_ERROR_TYPE PBBeep(int id, int volume, int duration_ns);
+        public static extern PB_ERROR_TYPE PBBeep(int id, int volume, int duration_ms);
 
         [DllImport(DLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern PB_ERROR_TYPE PBRestart(int id);
