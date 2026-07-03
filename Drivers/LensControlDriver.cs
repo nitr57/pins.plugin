@@ -214,7 +214,7 @@ namespace NINA.PINS.Drivers {
         private void UpdateFromStatus(LensControlSDK.LC_DEVICE_STATUS status) {
             _position = status.position;
             _maxStep = status.maxPosition;
-            _aperture = status.apterture;
+            _aperture = status.aperture;
             _minAperture = status.minAperture;
             _maxAperture = status.maxAperture;
             _lensName = status.name ?? string.Empty;

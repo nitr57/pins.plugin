@@ -25,7 +25,7 @@ namespace NINA.PINS.SDK {
         public enum LC_CONFIG_MASK : uint {
             MASK_LC_APERTURE = 0x0001,
             MASK_LC_POSITION = 0x0002,
-            MASK_LC_ALL = 0x0004
+            MASK_LC_ALL = 0x0003
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
@@ -54,7 +54,7 @@ namespace NINA.PINS.SDK {
             public int focalLength;
             public int maxAperture;
             public int minAperture;
-            public int apterture;
+            public int aperture;
             public int maxPosition;
             public int position;
         }
