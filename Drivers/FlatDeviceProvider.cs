@@ -1,9 +1,7 @@
 ﻿using NINA.Equipment.Interfaces;
 using NINA.Equipment.Interfaces.ViewModel;
-using NINA.PINS.SDK;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Text;
 
 namespace NINA.PINS.Drivers
 {
@@ -17,26 +15,13 @@ namespace NINA.PINS.Drivers
         {
             var devices = new List<IFlatDevice>();
 
-            // If powerbox is connected, this is our flatdevice
+            // The flat device piggybacks on the PWM port of an already-connected PowerBox,
+            // so it can only ever connect successfully once that PowerBox is connected.
+            // Scanning for un-connected PowerBox device ids here would just add dead-end
+            // entries that always fail to connect.
             if (PINS.ConnectedPowerBox?.Connected == true)
             {
                 devices.Add(new FlatDeviceDriver(PINS.ConnectedPowerBox.DeviceId, PINS.ConnectedPowerBox.Id));
-            }
-            else
-            {
-                // Try to enumerate native devices via the SDK
-                var ids = PowerBoxDriver.ScanDeviceIds();
-                if (ids != null)
-                {
-                    foreach (var id in ids)
-                    {
-                        var serial = new StringBuilder(PowerBoxSDK.PB_VERSION_LEN);
-                        if (PowerBoxSDK.PBGetSerial(id, serial) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
-                        {
-                            devices.Add(new FlatDeviceDriver(id, serial.ToString()));
-                        }
-                    }
-                }
             }
 
             return devices;

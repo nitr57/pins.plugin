@@ -1144,6 +1144,13 @@ namespace NINA.PINS.Drivers
                     PowerBoxDewPort dewPort = (PowerBoxDewPort)port;
                     uint mask = e.PropertyName switch
                     {
+                        // When enabling the dew port, always include the current power level in the
+                        // same SDK call so the port turns on at the correct duty cycle. Without this,
+                        // a subsequent SetPower write may be skipped (see PWMPort.SetPower below) because
+                        // the hardware-reported power level still matches the requested value, leaving
+                        // the dew port enabled but outputting 0% if the firmware reset the duty cycle on
+                        // the previous disable.
+                        nameof(PowerBoxPort.Enabled) when dewPort.Enabled => PowerBoxSDK.MASK_PORT_ENABLE | PowerBoxSDK.MASK_PORT_POWER,
                         nameof(PowerBoxPort.Enabled) => PowerBoxSDK.MASK_PORT_ENABLE,
                         nameof(PowerBoxDewPort.AutoMode) => PowerBoxSDK.MASK_PORT_AUTO_DEW_MODE,
                         nameof(PowerBoxDewPort.AutoThreshold) => PowerBoxSDK.MASK_PORT_AUTO_DEW_THRESHOLD,

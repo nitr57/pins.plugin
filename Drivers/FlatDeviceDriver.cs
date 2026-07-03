@@ -49,25 +49,44 @@ namespace NINA.PINS.Drivers
 
         public CoverState CoverState => CoverState.NotPresent;
 
-        public int MaxBrightness => PINS.ConnectedPowerBox.PWMPorts[0].Resolution;
+        // The flat device piggybacks on the PowerBox's PWM port. That PowerBox can disconnect
+        // (or be replaced by a different instance) at any time while this driver stays
+        // Connected, so every access must re-check availability rather than dereference directly.
+        private bool IsPowerBoxAvailable => PINS.ConnectedPowerBox?.Connected == true;
+
+        public int MaxBrightness => IsPowerBoxAvailable ? PINS.ConnectedPowerBox.PWMPorts[0].Resolution : 0;
 
         public int MinBrightness => 0;
 
         public bool LightOn
         {
-            get => Connected && PINS.ConnectedPowerBox.PWMPorts[0].Enabled;
+            get => IsPowerBoxAvailable && PINS.ConnectedPowerBox.PWMPorts[0].Enabled;
             set
             {
-                PINS.ConnectedPowerBox.PWMPorts[0].Enabled = value;
+                if (IsPowerBoxAvailable)
+                {
+                    PINS.ConnectedPowerBox.PWMPorts[0].Enabled = value;
+                }
+                else
+                {
+                    Logger.Error("Cannot set LightOn: PINS PowerBox is not connected.");
+                }
             }
         }
 
         public int Brightness
         {
-            get => Connected ? PINS.ConnectedPowerBox.PWMPorts[0].Power : 0;
+            get => IsPowerBoxAvailable ? PINS.ConnectedPowerBox.PWMPorts[0].Power : 0;
             set
             {
-                PINS.ConnectedPowerBox.PWMPorts[0].SetPower = value;
+                if (IsPowerBoxAvailable)
+                {
+                    PINS.ConnectedPowerBox.PWMPorts[0].SetPower = value;
+                }
+                else
+                {
+                    Logger.Error("Cannot set Brightness: PINS PowerBox is not connected.");
+                }
             }
         }
 
@@ -77,7 +96,7 @@ namespace NINA.PINS.Drivers
 
         public async Task<bool> Connect(CancellationToken token)
         {
-            if (PINS.ConnectedPowerBox?.Connected == true)
+            if (IsPowerBoxAvailable)
             {
                 Connected = true;
                 return true;
