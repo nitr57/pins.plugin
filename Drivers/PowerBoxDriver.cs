@@ -121,6 +121,12 @@ namespace NINA.PINS.Drivers
         private Task pollingTask;
         private int _consecutiveStatusFailures = 0;
         private const int MaxConsecutiveStatusFailures = 5;
+
+        // Snapshot of the switches for the polling loop, replaced as a whole by ScanForSwitches
+        // so the loop never iterates the collection while it is being rebuilt
+        private volatile PowerBoxSwitch[] _pollSwitches = Array.Empty<PowerBoxSwitch>();
+        private readonly List<PowerBoxSwitch> _scannedSwitches = new();
+        private readonly Dictionary<string, DateTime> _lastPollErrors = new();
         private PowerBoxPowerSupply _powerSupply;
         private PowerBoxPorts _powerPorts;
         private PowerBoxUSBPorts _usbPorts;
@@ -566,9 +572,11 @@ namespace NINA.PINS.Drivers
 
             // start polling after a short delay to allow device to stabilize
             pollingCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+            // Capture the token, not the CTS: a token stays usable after its CTS was disposed
+            var pollingToken = pollingCts.Token;
             pollingTask = Task.Run(async () =>
             {
-                while (!pollingCts.Token.IsCancellationRequested)
+                while (!pollingToken.IsCancellationRequested)
                 {
                     _isHardwareUpdate.Value = true;
                     try
@@ -625,7 +633,7 @@ namespace NINA.PINS.Drivers
                             catch (Exception ex)
                             {
                                 _consecutiveStatusFailures++;
-                                Logger.Error($"Error polling device status: {ex.Message}");
+                                LogPollingError("device status", ex);
                             }
 
                             // Poll power supply status
@@ -639,7 +647,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Logger.Error($"Error polling status: {ex.Message}");
+                                LogPollingError("power supply status", ex);
                             }
 
                             // Poll power port status
@@ -653,7 +661,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Logger.Error($"Error polling status: {ex.Message}");
+                                LogPollingError("power port status", ex);
                             }
 
                             // Poll USB port status
@@ -667,7 +675,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Logger.Error($"Error polling status: {ex.Message}");
+                                LogPollingError("USB port status", ex);
                             }
 
                             // Poll Dew port status
@@ -681,7 +689,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Logger.Error($"Error polling status: {ex.Message}");
+                                LogPollingError("Dew port status", ex);
                             }
 
                             // Poll Buck port status
@@ -695,7 +703,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Logger.Error($"Error polling status: {ex.Message}");
+                                LogPollingError("Buck port status", ex);
                             }
 
                             // Poll PWM port status
@@ -709,7 +717,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Logger.Error($"Error polling status: {ex.Message}");
+                                LogPollingError("PWM port status", ex);
                             }
 
                             // Poll WiFi status
@@ -723,7 +731,7 @@ namespace NINA.PINS.Drivers
                             }
                             catch (Exception ex)
                             {
-                                Logger.Error($"Error polling status: {ex.Message}");
+                                LogPollingError("WiFi status", ex);
                             }
 
                             // Update 5V current
@@ -739,6 +747,12 @@ namespace NINA.PINS.Drivers
                             OnPropertyChanged(nameof(Supply5W));
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        // Never let an exception escape the loop, otherwise the polling task
+                        // ends silently and all values freeze until the device is reconnected
+                        LogPollingError("polling loop", ex);
+                    }
                     finally
                     {
                         _isHardwareUpdate.Value = false;
@@ -753,21 +767,36 @@ namespace NINA.PINS.Drivers
                     }
 
                     // Refresh all switch values so the NINA Switches tab reflects the latest state
-                    foreach (var sw in Switches)
+                    foreach (var sw in _pollSwitches)
                     {
-                        ((PowerBoxSwitch)sw).Poll();
+                        try
+                        {
+                            sw.Poll();
+                        }
+                        catch (Exception ex)
+                        {
+                            LogPollingError($"switch {sw.Id}", ex);
+                        }
                     }
 
                     try
                     {
-                        await Task.Delay(1000, pollingCts.Token).ConfigureAwait(false);
+                        await Task.Delay(1000, pollingToken).ConfigureAwait(false);
                     }
                     catch (TaskCanceledException)
                     {
                         break;
                     }
                 }
-            }, pollingCts.Token);
+            }, pollingToken);
+
+            // Should never trigger since the loop catches everything, but if the task dies
+            // anyway it must not do so silently
+            _ = pollingTask.ContinueWith(
+                t => Logger.Error($"PowerBox polling task terminated: {t.Exception}"),
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.Default);
 
             // We need to wait for the status updates to arrive, so we simply loop a bit
             // Add a timeout to prevent infinite waiting (max 5 seconds)
@@ -825,7 +854,10 @@ namespace NINA.PINS.Drivers
                     // Wait for the polling task to fully stop before closing the device,
                     // otherwise in-flight PBGet*/PBSetConfig calls race the close and
                     // operate on a closed (and possibly reused) device id.
-                    pollingTask?.Wait();
+                    if (pollingTask != null && !pollingTask.Wait(TimeSpan.FromSeconds(10)))
+                    {
+                        Logger.Warning("PowerBox polling task did not stop within 10 s, closing anyway");
+                    }
                 }
                 catch { }
 
@@ -878,18 +910,20 @@ namespace NINA.PINS.Drivers
         private void ScanForSwitches()
         {
             Logger.Trace("Scanning for switches...");
+            _pollSwitches = Array.Empty<PowerBoxSwitch>();
+            _scannedSwitches.Clear();
             Switches.Clear();
 
-            Switches.Add(new PowerBoxSwitch(() => "12V rail", () => "Supply [V]", () => _powerSupply.Supply12V, 0));
-            Switches.Add(new PowerBoxSwitch(() => "Temperature", () => "Environment [°C]", () => Temperature, 1));
-            Switches.Add(new PowerBoxSwitch(() => "5V rail", () => "Supply [V]", () => _powerSupply.Supply5V, 2));
-            Switches.Add(new PowerBoxSwitch(() => "Humidity", () => "Environment [%]", () => Humidity, 3));
-            Switches.Add(new PowerBoxSwitch(() => "Current", () => "Supply [A]", () => _powerSupply.Supply12A, 4));
-            Switches.Add(new PowerBoxSwitch(() => "Dew Point", () => "Environment [°C]", () => DewPoint, 5));
-            Switches.Add(new PowerBoxSwitch(() => "Power", () => "Supply [W]", () => _powerSupply.Supply12W, 6));
-            Switches.Add(new PowerBoxSwitch(() => "AverageAmps", () => "Consumption average amps", () => _powerSupply.AverageAmps, 7));
-            Switches.Add(new PowerBoxSwitch(() => "WattsPerHour", () => "Consumption watts per hour", () => _powerSupply.WattsPerHour, 8));
-            Switches.Add(new PowerBoxSwitch(() => "AmpsPerHour", () => "Consumption amps per hour", () => _powerSupply.AmpsPerHour, 9));
+            AddSwitch(new PowerBoxSwitch(() => "12V rail", () => "Supply [V]", () => _powerSupply.Supply12V, 0));
+            AddSwitch(new PowerBoxSwitch(() => "Temperature", () => "Environment [°C]", () => Temperature, 1));
+            AddSwitch(new PowerBoxSwitch(() => "5V rail", () => "Supply [V]", () => _powerSupply.Supply5V, 2));
+            AddSwitch(new PowerBoxSwitch(() => "Humidity", () => "Environment [%]", () => Humidity, 3));
+            AddSwitch(new PowerBoxSwitch(() => "Current", () => "Supply [A]", () => _powerSupply.Supply12A, 4));
+            AddSwitch(new PowerBoxSwitch(() => "Dew Point", () => "Environment [°C]", () => DewPoint, 5));
+            AddSwitch(new PowerBoxSwitch(() => "Power", () => "Supply [W]", () => _powerSupply.Supply12W, 6));
+            AddSwitch(new PowerBoxSwitch(() => "AverageAmps", () => "Consumption average amps", () => _powerSupply.AverageAmps, 7));
+            AddSwitch(new PowerBoxSwitch(() => "WattsPerHour", () => "Consumption watts per hour", () => _powerSupply.WattsPerHour, 8));
+            AddSwitch(new PowerBoxSwitch(() => "AmpsPerHour", () => "Consumption amps per hour", () => _powerSupply.AmpsPerHour, 9));
 
             short switchId = 10;
 
@@ -899,11 +933,11 @@ namespace NINA.PINS.Drivers
             {
                 if (port.ReadOnly)
                 {
-                    Switches.Add(new PowerBoxSwitch(() => port.Name, () => $"12V #{port.Index + 1}: always on (Current [A])", () => port.Current, switchId));
+                    AddSwitch(new PowerBoxSwitch(() => port.Name, () => $"12V #{port.Index + 1}: always on (Current [A])", () => port.Current, switchId));
                 }
                 else
                 {
-                    Switches.Add(new PowerBoxWritableSwitch(
+                    AddSwitch(new PowerBoxWritableSwitch(
                         () => port.Name,
                         () => $"12V #{port.Index + 1}: {(port.Enabled ? port.Current : 0)}A",
                         () => port.Enabled ? 1 : 0,
@@ -919,7 +953,7 @@ namespace NINA.PINS.Drivers
             {
                 if (port.ReadOnly)
                 {
-                    Switches.Add(new PowerBoxSwitch(
+                    AddSwitch(new PowerBoxSwitch(
                         () => port.Name,
                         () => $"USB #{port.Index + 1}: {port.Current}A",
                         () => port.Current,
@@ -927,7 +961,7 @@ namespace NINA.PINS.Drivers
                 }
                 else
                 {
-                Switches.Add(new PowerBoxWritableSwitch(
+                AddSwitch(new PowerBoxWritableSwitch(
                     () => port.Name,
                     () => $"USB #{port.Index + 1}: {(port.Enabled ? port.Current : 0)}A",
                     () => port.Enabled ? 1 : 0,
@@ -942,7 +976,7 @@ namespace NINA.PINS.Drivers
 
             foreach (var port in DewPorts.Ports.Take(_actualDewPortCount))
             {
-                Switches.Add(new PowerBoxWritableSwitch(
+                AddSwitch(new PowerBoxWritableSwitch(
                     () => $"{port.Name} auto dew threshold",
                     () => "Set threshold [°C]",
                     () => port.AutoThreshold,
@@ -954,7 +988,7 @@ namespace NINA.PINS.Drivers
             // Dew hub - auto mode
             foreach (var port in DewPorts.Ports.Take(_actualDewPortCount))
             {
-                Switches.Add(new PowerBoxWritableSwitch(
+                AddSwitch(new PowerBoxWritableSwitch(
                     () => $"{port.Name} auto mode",
                     () => $"Probe: {(port.Probe == -127.0f ? "--" : port.Probe)}°C",
                     () => port.AutoMode ? 1 : 0,
@@ -966,7 +1000,7 @@ namespace NINA.PINS.Drivers
             // Dew hub
             foreach (var port in DewPorts.Ports.Take(_actualDewPortCount))
             {
-                Switches.Add(new PowerBoxWritableSwitch(
+                AddSwitch(new PowerBoxWritableSwitch(
                     () => port.Name,
                     () => $"Dew #{port.Index + 1}: {(port.Enabled ? Math.Round(port.Power * 100.0 / port.Resolution, 1) : 0)}% ({(port.Enabled ? Math.Round(port.Current, 2) : 0)}A)",
                     () => port.Enabled ? port.Power : 0,
@@ -1001,7 +1035,7 @@ namespace NINA.PINS.Drivers
             if (_actualBuckPortCount > 0)
             {
             var buckPort = BuckPorts.Ports[0];
-            Switches.Add(new PowerBoxWritableSwitch(
+            AddSwitch(new PowerBoxWritableSwitch(
                             () => buckPort.Name,
                             () => $"Buck converter: {(buckPort.Enabled ? Math.Round(buckPort.Power, 2) : 0)}V ({(buckPort.Enabled ? Math.Round(buckPort.Current, 2) : 0)}A)",
                             () =>
@@ -1038,7 +1072,7 @@ namespace NINA.PINS.Drivers
             if (_actualPWMPortCount > 0)
             {
             var pwmPort = PWMPorts.Ports[0];
-            Switches.Add(new PowerBoxWritableSwitch(
+            AddSwitch(new PowerBoxWritableSwitch(
                 () => pwmPort.Name,
                 () => $"PWM port: {(pwmPort.Enabled ? Math.Round(pwmPort.Power * 100.0 / pwmPort.Resolution, 1) : 0)}% ({(pwmPort.Enabled ? Math.Round(pwmPort.Current, 2) : 0)}A)",
                 () =>
@@ -1073,7 +1107,34 @@ namespace NINA.PINS.Drivers
             switchId++;
             } // end PWM port
 
-            Logger.Trace($"Total switches configured: {Switches.Count}");
+            _pollSwitches = _scannedSwitches.ToArray();
+            Logger.Trace($"Total switches configured: {_pollSwitches.Length}");
+        }
+
+        private void AddSwitch(PowerBoxSwitch sw)
+        {
+            _scannedSwitches.Add(sw);
+            Switches.Add(sw);
+        }
+
+        /// <summary>
+        /// Logs a polling error, but the same error only once every 5 minutes since the loop
+        /// runs every second. Returns true when the error was logged.
+        /// </summary>
+        private bool LogPollingError(string source, Exception ex)
+        {
+            var key = $"{source}|{ex.GetType().FullName}|{ex.Message}";
+            var now = DateTime.UtcNow;
+            lock (_lastPollErrors)
+            {
+                if (_lastPollErrors.TryGetValue(key, out var last) && now - last < TimeSpan.FromMinutes(5))
+                {
+                    return false;
+                }
+                _lastPollErrors[key] = now;
+            }
+            Logger.Error($"PowerBox polling error ({source}): {ex}");
+            return true;
         }
 
         private void SubscribeToPortChanges()
