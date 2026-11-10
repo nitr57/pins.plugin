@@ -84,6 +84,15 @@ namespace NINA.PINS.Equipment {
             OnPropertyChanged(nameof(Overcurrent));
         }
 
+        // Port state from the polled status. The box can switch a port off on its own
+        // (over current), so the state must not only come from the config
+        internal void UpdateEnabled(int enabled) {
+            if (_enabled != (enabled != 0)) {
+                _enabled = enabled != 0;
+                OnPropertyChanged(nameof(Enabled));
+            }
+        }
+
         internal virtual void UpdateFromConfig(int enabled, int bootstate) {
             _enabled = enabled != 0;
             _bootState = bootstate != 0;
@@ -146,7 +155,7 @@ namespace NINA.PINS.Equipment {
 
         internal void UpdateFromStatus(int enabled, float current, int overcurrent, float probe, int power, int resolution) {
             base.UpdateFromStatus(float.NaN, current, overcurrent);
-            base.UpdateFromConfig(enabled, 0);
+            UpdateEnabled(enabled);
 
             _probe = Math.Round(probe, 1);
             _power = power;

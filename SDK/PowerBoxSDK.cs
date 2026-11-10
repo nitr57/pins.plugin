@@ -112,6 +112,9 @@ namespace NINA.PINS.SDK
 
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_POWER_PORTS)]
             public int[] readOnly;
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_POWER_PORTS)]
+            public int[] state;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -130,6 +133,9 @@ namespace NINA.PINS.SDK
 
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_USB_PORTS)]
             public int[] readOnly;
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PB_MAX_USB_PORTS)]
+            public int[] state;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -164,6 +170,7 @@ namespace NINA.PINS.SDK
             public float vset;
             public float vmin;
             public float vmax;
+            public int state;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -174,6 +181,7 @@ namespace NINA.PINS.SDK
             public float current;
             public int overcurrent;
             public int pwm;
+            public int state;
         }
 
         [StructLayout(LayoutKind.Sequential)]

@@ -37,6 +37,7 @@ namespace NINA.PINS.Equipment
             {
                 _ports[i].UpdateFromStatus(float.NaN, status.current[i], status.overcurrent[i]);
                 _ports[i].UpdateReadOnly(status.readOnly[i] != 0);
+                _ports[i].UpdateEnabled(status.state[i]);
             }
         }
 
@@ -46,6 +47,7 @@ namespace NINA.PINS.Equipment
             {
                 _ports[i].UpdateFromStatus(status.voltage[i], status.current[i], status.overcurrent[i]);
                 _ports[i].UpdateReadOnly(status.readOnly[i] != 0);
+                _ports[i].UpdateEnabled(status.state[i]);
             }
         }
 
@@ -65,6 +67,7 @@ namespace NINA.PINS.Equipment
             if (_ports[0] is PowerBoxBuckPort buckPort)
             {
                 buckPort.UpdateFromStatus(status.current, status.overcurrent, status.vset, status.vmin, status.vmax, status.voltage);
+                buckPort.UpdateEnabled(status.state);
             }
         }
 
@@ -73,6 +76,7 @@ namespace NINA.PINS.Equipment
             if (_ports[0] is PowerBoxPWMPort pwmPort)
             {
                 pwmPort.UpdateFromStatus(status.current, status.overcurrent, status.pwm, status.pwmResolution);
+                pwmPort.UpdateEnabled(status.state);
             }
         }
 
