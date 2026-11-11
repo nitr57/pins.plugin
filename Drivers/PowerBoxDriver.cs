@@ -802,7 +802,8 @@ namespace NINA.PINS.Drivers
             // Add a timeout to prevent infinite waiting (max 5 seconds)
             bool NotYetInitialized() =>
                 (_actualDewPortCount > 0 && DewPorts.Ports.Count > 0 && DewPorts.Ports[0].Resolution == 0)
-                || (_actualBuckPortCount > 0 && BuckPorts.Ports.Count > 0 && BuckPorts.Ports[0].MaxVoltage < 1.0)
+                // Negated, so a not yet received (NaN) value also waits
+                || (_actualBuckPortCount > 0 && BuckPorts.Ports.Count > 0 && !(BuckPorts.Ports[0].MaxVoltage >= 1.0))
                 || (_actualPWMPortCount > 0 && PWMPorts.Ports.Count > 0 && PWMPorts.Ports[0].Resolution == 0);
 
             var waitTimeout = DateTime.Now.AddSeconds(5);
@@ -1044,25 +1045,77 @@ namespace NINA.PINS.Drivers
                             },
                             (value) =>
                             {
-                                value = value < 1.0 ? 0.0 : value;
+                                // 0 = off, the target voltage is kept (only the state is sent;
+                                // serial PowerBox: the stored target is sent along, the firmware
+                                // replaces it by vmin if it is out of its current range, and before
+                                // the first ADJ status line it is the SDK default 1.0 V unless a
+                                // target was sent before).
+                                // Otherwise on with the given voltage. State and voltage are sent
+                                // in one call, so the port is never switched on with the previous
+                                // voltage first (PinsBox only: the serial PowerBox firmware switches
+                                // on first and only then checks and sets the voltage, so the port
+                                // briefly runs at the previous DAC voltage; a rejected target
+                                // switches it off again).
+                                // N.I.N.A. does not range check written values (SwitchVM/API); the
+                                // switch panel stepper only clamps to the Minimum/Maximum fixed at
+                                // switch creation, and the sequencer validation checks them. A setter
+                                // that returns normally is only verified by reading the value back
+                                // (switch panel and sequencer; timeout after 4 x N.I.N.A.'s device
+                                // polling interval; the Advanced API does not wait for the write at
+                                // all). The read-back right after a successful write is the requested
+                                // value (serial PowerBox: until the next ADJ status line), so a
+                                // firmware rejection is not detected. Invalid values therefore throw
+                                // right away, without touching the port.
+                                double min = double.IsNaN(buckPort.MinVoltage) ? 1.0 : Math.Max(1.0, buckPort.MinVoltage);
+                                double max = buckPort.MaxVoltage;
+                                string range = double.IsNaN(max) ? $"0 = off, min {min} V" : $"0 = off, {min} - {max} V";
 
-                                // Turn on, if voltage >= 1 and current state is off
-                                if (value >= 1.0 && buckPort.Enabled == false)
+                                if (!double.IsFinite(value))
                                 {
-                                    buckPort.Enabled = true;
+                                    throw BuckSwitchValueError($"Buck converter: invalid value {value} V ({range})");
                                 }
 
-                                // Turn off, if voltage is < vmin and current state is on
-                                if (value < buckPort.MinVoltage && buckPort.Enabled == true)
+                                // Snap pure floating point noise to the 0.01 V grid (e.g. the N.I.N.A.
+                                // stepper adds 0.1 ten times and gets 0.9999999999999999). Anything
+                                // further away is rejected: rounding it would change the meaning
+                                // (e.g. 0.995 -> 1.0 = on) and N.I.N.A.'s check after setting
+                                // (tolerance 1e-5 against the unrounded value) would fail anyway.
+                                double rounded = Math.Round(value, 2, MidpointRounding.AwayFromZero);
+                                if (Math.Abs(value - rounded) > 1e-6)
                                 {
-                                    buckPort.Enabled = false;
+                                    throw BuckSwitchValueError($"Buck converter: {value} V has more than 2 decimals ({range})");
                                 }
 
-                                // Set voltage
-                                buckPort.SetVoltage = Convert.ToSingle(value);
+                                if (rounded < 0 || (!double.IsNaN(max) && rounded > max))
+                                {
+                                    throw BuckSwitchValueError($"Buck converter: invalid value {value} V ({range})");
+                                }
+
+                                PowerBoxSDK.PB_ERROR_TYPE result;
+                                if (rounded == 0)
+                                {
+                                    result = ApplyBuckPortConfig(buckPort, false, double.NaN);
+                                }
+                                else if (rounded < min)
+                                {
+                                    throw BuckSwitchValueError($"Buck converter: {value} V is below the minimum of {min} V, use 0 to switch off");
+                                }
+                                else
+                                {
+                                    result = ApplyBuckPortConfig(buckPort, true, rounded);
+                                }
+
+                                // The error was already shown (ShowBuckPortError). Throw, so N.I.N.A.
+                                // sees the failure right away instead of waiting for a timeout.
+                                if (result != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                                {
+                                    throw new InvalidOperationException($"Buck converter: setting the switch value failed ({result})");
+                                }
                             },
                             switchId,
-                            Math.Max(1.0, buckPort.MinVoltage),
+                            // Minimum 0, so "off" (value 0, as reported while off) is a valid
+                            // value for N.I.N.A. and the sequencer
+                            0.0,
                             buckPort.MaxVoltage,
                             0.1));
             switchId++;
@@ -1693,29 +1746,156 @@ namespace NINA.PINS.Drivers
             }
         }
 
-        private bool SetBuckPortConfig(PowerBoxBuckPort port, uint mask)
+        /// <summary>
+        /// Sets state and target voltage of the buck port with a single SDK call.
+        /// Two separate calls (enable, then voltage) would switch the port on with
+        /// the previous voltage first. Errors are shown (and logged) here; the result
+        /// is returned so the caller can report the failure to N.I.N.A.
+        /// </summary>
+        private PowerBoxSDK.PB_ERROR_TYPE ApplyBuckPortConfig(PowerBoxBuckPort port, bool enabled, double voltage)
         {
+            // NaN: only the state is sent, the SDK keeps the stored target voltage.
+            // That is only meant for switching off. Switching on without a voltage
+            // would use whatever target is stored.
+            if (enabled && double.IsNaN(voltage))
+            {
+                throw new ArgumentException("Buck converter: switching on requires a target voltage", nameof(voltage));
+            }
+
+            uint mask = PowerBoxSDK.MASK_PORT_ENABLE;
+            if (!double.IsNaN(voltage))
+            {
+                mask |= PowerBoxSDK.MASK_PORT_VOLTAGE;
+            }
+
+            PowerBoxSDK.PB_ERROR_TYPE result;
+            Exception error = null;
             try
             {
-                PowerBoxSDK.PB_BUCK_PORT_CONFIG config = new PowerBoxSDK.PB_BUCK_PORT_CONFIG();
-                config.mask = mask;
-                config.enabled = port.Enabled ? 1 : 0;
-                config.targetVoltage = Convert.ToSingle(port.SetVoltage);
-
+                // The config is built from the arguments, not from the model: the polling
+                // task updates the model under _sdkLock and could otherwise overwrite the
+                // requested values before they are sent. The model is only updated after a
+                // successful call, under the same lock (Monitor is reentrant).
                 lock (_sdkLock)
                 {
-                    if (PowerBoxSDK.PBSetBuckPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    result = SendBuckPortConfig(enabled, voltage, mask);
+                    if (result == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
                     {
-                        return true;
+                        // Update the model without triggering the per-property handler
+                        bool wasHardwareUpdate = _isHardwareUpdate.Value;
+                        _isHardwareUpdate.Value = true;
+                        try
+                        {
+                            if (!double.IsNaN(voltage))
+                            {
+                                port.SetVoltage = voltage;
+                            }
+                            port.Enabled = enabled;
+                        }
+                        finally
+                        {
+                            _isHardwareUpdate.Value = wasHardwareUpdate;
+                        }
                     }
                 }
-                Notification.ShowError("Failed to set buck port configuration.");
-                return false;
             }
             catch (Exception ex)
             {
-                Notification.ShowError($"Error setting port config: {ex.Message}");
+                result = PowerBoxSDK.PB_ERROR_TYPE.PB_ERROR_COMMUNICATION;
+                error = ex;
+            }
+
+            // Notifications outside the lock, they may wait for the UI thread
+            if (result != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+            {
+                ShowBuckPortError(result, error);
+                RefreshBuckPortConfig();
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Reports an invalid buck switch value and returns the exception for the caller
+        /// to throw, so the switch panel and the sequencer see the failure right away
+        /// instead of waiting for N.I.N.A.'s read-back timeout. Logged as error here: the
+        /// switch panel (NotifyTaskCompletion) and the sequencer log the exception too
+        /// (then it appears twice), but a caller that does not await the write (e.g. the
+        /// Advanced API's switch/set) never observes it.
+        /// Not NotSupportedException: N.I.N.A. reserves it for "identity API unavailable".
+        /// SwitchVM.SetSwitchValueByIdentity converts it to InvalidOperationException, but an
+        /// ISwitchMediator/ISwitchVM implementation that passes it through would make the
+        /// SetSwitchValue sequence item (with a stable identity) fall back to the index write
+        /// and call this setter a second time (duplicate error).
+        /// </summary>
+        private static Exception BuckSwitchValueError(string message)
+        {
+            Logger.Error(message);
+            Notification.ShowError(message);
+            return new ArgumentException(message);
+        }
+
+        private bool SetBuckPortConfig(PowerBoxBuckPort port, uint mask)
+        {
+            // Take the values right away, before waiting for the lock
+            bool enabled = port.Enabled;
+            double voltage = port.SetVoltage;
+
+            PowerBoxSDK.PB_ERROR_TYPE result;
+            Exception error = null;
+            try
+            {
+                result = SendBuckPortConfig(enabled, voltage, mask);
+            }
+            catch (Exception ex)
+            {
+                result = PowerBoxSDK.PB_ERROR_TYPE.PB_ERROR_COMMUNICATION;
+                error = ex;
+            }
+
+            if (result != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+            {
+                ShowBuckPortError(result, error);
                 return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Sends the buck port configuration from the given values. Shows no notification,
+        /// so it can be called while holding _sdkLock.
+        /// </summary>
+        private PowerBoxSDK.PB_ERROR_TYPE SendBuckPortConfig(bool enabled, double voltage, uint mask)
+        {
+            PowerBoxSDK.PB_BUCK_PORT_CONFIG config = new PowerBoxSDK.PB_BUCK_PORT_CONFIG();
+            config.mask = mask;
+            config.enabled = enabled ? 1 : 0;
+            config.targetVoltage = Convert.ToSingle(voltage);
+
+            lock (_sdkLock)
+            {
+                return PowerBoxSDK.PBSetBuckPortConfig(deviceId, ref config);
+            }
+        }
+
+        private void ShowBuckPortError(PowerBoxSDK.PB_ERROR_TYPE result, Exception error)
+        {
+            if (error != null)
+            {
+                Logger.Error($"Error setting buck port config: {error}");
+                Notification.ShowError($"Error setting buck port config: {error.Message}");
+            }
+            else if (result == PowerBoxSDK.PB_ERROR_TYPE.PB_ERROR_INVALID_PARAMETER)
+            {
+                Logger.Error($"Buck port: invalid target voltage ({result})");
+                Notification.ShowError("Failed to set buck port configuration: invalid target voltage.");
+            }
+            else
+            {
+                // PinsBox reports range errors as PB_ERROR_COMMUNICATION too; on the serial
+                // PowerBox it means the command could not be sent
+                Logger.Error($"Buck port: failed to set configuration ({result})");
+                Notification.ShowError($"Buck port configuration rejected or failed ({result}), see log. PinsBox: supply limit or range, pending over-current shutdown or hardware error; serial PowerBox: communication error.");
             }
         }
 
@@ -1801,6 +1981,7 @@ namespace NINA.PINS.Drivers
 
         private void RefreshBuckPortConfig()
         {
+            bool wasHardwareUpdate = _isHardwareUpdate.Value;
             _isHardwareUpdate.Value = true;
             try
             {
@@ -1814,7 +1995,7 @@ namespace NINA.PINS.Drivers
                 }
             }
             catch { }
-            finally { _isHardwareUpdate.Value = false; }
+            finally { _isHardwareUpdate.Value = wasHardwareUpdate; }
         }
 
         private void RefreshPWMPortConfig()

@@ -219,8 +219,11 @@ namespace NINA.PINS.Equipment {
             base.UpdateFromStatus(voltage, current, overcurrent);
 
             _setVoltage = Math.Round(vset, 2);
-            _minVoltage = Math.Round(vmin, 2);
-            _maxVoltage = Math.Round(vmax, 2);
+            // vmin/vmax are whole mV (as float). Round the limits inwards to the 0.01 V
+            // grid, so the plugin never accepts a value outside the hardware range
+            // (plain rounding could exceed the supply dependent maximum by up to 5 mV).
+            _minVoltage = Math.Ceiling(Math.Round(vmin * 1000.0) / 10.0) / 100.0;
+            _maxVoltage = Math.Floor(Math.Round(vmax * 1000.0) / 10.0) / 100.0;
 
             OnPropertyChanged(nameof(SetVoltage));
             OnPropertyChanged(nameof(MinVoltage));
