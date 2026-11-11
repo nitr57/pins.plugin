@@ -355,12 +355,24 @@ namespace NINA.PINS.Drivers
             int[] ids = new int[PowerBoxSDK.PB_MAX_NUM];
             try
             {
-                if (PowerBoxSDK.PBScan(out number, ids) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                var result = PowerBoxSDK.PBScan(out number, ids);
+                if (result == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
                 {
                     for (int i = 0; i < number; ++i)
                     {
                         list.Add(ids[i]);
                     }
+                }
+                else if (result == PowerBoxSDK.PB_ERROR_TYPE.PB_ERROR_INVALID_STATE)
+                {
+                    // The SDK log (stderr) has the details; this is the only trace in NINA
+                    const string msg = "PinsBox present but not usable (e.g. in use by another process or initialization failed, details in the SDK log)";
+                    Logger.Error(msg);
+                    Notification.ShowWarning(msg);
+                }
+                else
+                {
+                    Logger.Error($"PowerBox scan failed ({result})");
                 }
             }
             catch (Exception ex)
