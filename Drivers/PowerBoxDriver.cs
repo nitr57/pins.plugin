@@ -1019,23 +1019,21 @@ namespace NINA.PINS.Drivers
                     () => port.Enabled ? port.Power : 0,
                     (value) =>
                     {
-                        // On auto mode, do nothing
-                        if (port.AutoMode) return;
-
-                        // Turn on, if duty cycle > 0 and state is off
-                        if (value > 0 && port.Enabled == false)
+                        // 0 = off, otherwise on with this power. Invalid values throw without
+                        // touching the port (see the buck switch); state and power are sent in
+                        // one call, so the port never runs with the previous power first.
+                        string name = $"Dew #{port.Index + 1}";
+                        int power = CheckPortPowerValue(name, value, port.Resolution);
+                        if (port.AutoMode)
                         {
-                            port.Enabled = true;
+                            throw SwitchValueError($"{name}: auto mode is on, switch it off to set the power");
                         }
 
-                        // Turn off, if duty cycle is 0 and state is on
-                        if (value == 0 && port.Enabled == true)
+                        var result = ApplyDewPortConfig(port, power > 0, power);
+                        if (result != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
                         {
-                            port.Enabled = false;
+                            throw new InvalidOperationException($"{name}: setting the switch value failed ({result})");
                         }
-
-                        // Set power
-                        port.SetPower = Convert.ToInt32(value);
                     },
                     switchId,
                     0,
@@ -1084,7 +1082,7 @@ namespace NINA.PINS.Drivers
 
                                 if (!double.IsFinite(value))
                                 {
-                                    throw BuckSwitchValueError($"Buck converter: invalid value {value} V ({range})");
+                                    throw SwitchValueError($"Buck converter: invalid value {value} V ({range})");
                                 }
 
                                 // Snap pure floating point noise to the 0.01 V grid (e.g. the N.I.N.A.
@@ -1095,12 +1093,12 @@ namespace NINA.PINS.Drivers
                                 double rounded = Math.Round(value, 2, MidpointRounding.AwayFromZero);
                                 if (Math.Abs(value - rounded) > 1e-6)
                                 {
-                                    throw BuckSwitchValueError($"Buck converter: {value} V has more than 2 decimals ({range})");
+                                    throw SwitchValueError($"Buck converter: {value} V has more than 2 decimals ({range})");
                                 }
 
                                 if (rounded < 0 || (!double.IsNaN(max) && rounded > max))
                                 {
-                                    throw BuckSwitchValueError($"Buck converter: invalid value {value} V ({range})");
+                                    throw SwitchValueError($"Buck converter: invalid value {value} V ({range})");
                                 }
 
                                 PowerBoxSDK.PB_ERROR_TYPE result;
@@ -1110,7 +1108,7 @@ namespace NINA.PINS.Drivers
                                 }
                                 else if (rounded < min)
                                 {
-                                    throw BuckSwitchValueError($"Buck converter: {value} V is below the minimum of {min} V, use 0 to switch off");
+                                    throw SwitchValueError($"Buck converter: {value} V is below the minimum of {min} V, use 0 to switch off");
                                 }
                                 else
                                 {
@@ -1150,20 +1148,14 @@ namespace NINA.PINS.Drivers
                 },
                 (value) =>
                 {
-                    // Turn on, if duty cycle > 0 and current state is off
-                    if (value > 0 && pwmPort.Enabled == false)
-                    {
-                        pwmPort.Enabled = true;
-                    }
+                    // 0 = off, otherwise on with this power, in one call (see the dew switch)
+                    int power = CheckPortPowerValue("PWM port", value, pwmPort.Resolution);
 
-                    // Turn off, if duty cycle is 0 and current state is on
-                    if (value == 0 && pwmPort.Enabled == true)
+                    var result = ApplyPWMPortConfig(pwmPort, power > 0, power);
+                    if (result != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
                     {
-                        pwmPort.Enabled = false;
+                        throw new InvalidOperationException($"PWM port: setting the switch value failed ({result})");
                     }
-
-                    // Set power
-                    pwmPort.SetPower = Convert.ToInt32(value);
                 },
                 switchId,
                 0,
@@ -1297,6 +1289,13 @@ namespace NINA.PINS.Drivers
                         Logger.Trace($"DewPort {port.Index} property {e.PropertyName} changed. Persisting...");
                         if (!SetDewPortConfig(dewPort, mask))
                         {
+                            RefreshDewPortConfig(port.Index);
+                        }
+                        else if (e.PropertyName == nameof(PowerBoxDewPort.AutoMode))
+                        {
+                            // Auto mode on/off is bumpless in the box: the port keeps the state and
+                            // power the regulation had, read them, otherwise SetPower is stale (and a
+                            // write of that value would be skipped as unchanged)
                             RefreshDewPortConfig(port.Index);
                         }
                     }
@@ -1741,19 +1740,21 @@ namespace NINA.PINS.Drivers
                 config.autoMode = port.AutoMode ? 1 : 0;
                 config.power = port.SetPower;
 
+                PowerBoxSDK.PB_ERROR_TYPE result;
                 lock (_sdkLock)
                 {
-                    if (PowerBoxSDK.PBSetDewPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
-                    {
-                        return true;
-                    }
+                    result = PowerBoxSDK.PBSetDewPortConfig(deviceId, ref config);
                 }
-                Notification.ShowError("Failed to set dew port configuration.");
+                if (result == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
+                    return true;
+                }
+                ShowPortError($"Dew #{port.Index + 1}", result, null);
                 return false;
             }
             catch (Exception ex)
             {
-                Notification.ShowError($"Error setting port config: {ex.Message}");
+                ShowPortError($"Dew #{port.Index + 1}", PowerBoxSDK.PB_ERROR_TYPE.PB_ERROR_COMMUNICATION, ex);
                 return false;
             }
         }
@@ -1828,7 +1829,7 @@ namespace NINA.PINS.Drivers
         }
 
         /// <summary>
-        /// Reports an invalid buck switch value and returns the exception for the caller
+        /// Reports an invalid switch value (buck, dew, PWM) and returns the exception for the caller
         /// to throw, so the switch panel and the sequencer see the failure right away
         /// instead of waiting for N.I.N.A.'s read-back timeout. Logged as error here: the
         /// switch panel (NotifyTaskCompletion) and the sequencer log the exception too
@@ -1840,11 +1841,161 @@ namespace NINA.PINS.Drivers
         /// SetSwitchValue sequence item (with a stable identity) fall back to the index write
         /// and call this setter a second time (duplicate error).
         /// </summary>
-        private static Exception BuckSwitchValueError(string message)
+        private static Exception SwitchValueError(string message)
         {
             Logger.Error(message);
             Notification.ShowError(message);
             return new ArgumentException(message);
+        }
+
+        /// <summary>
+        /// Checks a dew/PWM switch value: a whole number from 0 to the maximum of the port
+        /// (2^resolution - 1). Pure floating point noise is snapped to the whole number.
+        /// Throws (see SwitchValueError) otherwise, e.g. -1 would mean full power in the box.
+        /// </summary>
+        private static int CheckPortPowerValue(string name, double value, int maximum)
+        {
+            if (maximum <= 0)
+            {
+                throw SwitchValueError($"{name}: PWM resolution not known yet, try again");
+            }
+
+            double rounded = Math.Round(value);
+            if (!double.IsFinite(value) || Math.Abs(value - rounded) > 1e-6 || rounded < 0 || rounded > maximum)
+            {
+                throw SwitchValueError($"{name}: invalid value {value} (0 = off, 1 - {maximum} = on with this power)");
+            }
+
+            return (int)rounded;
+        }
+
+        /// <summary>
+        /// Sets state and power of a dew port with a single SDK call (like ApplyBuckPortConfig):
+        /// the config is built from the arguments, the model is updated after a successful call
+        /// under _sdkLock. Errors are shown here.
+        /// </summary>
+        private PowerBoxSDK.PB_ERROR_TYPE ApplyDewPortConfig(PowerBoxDewPort port, bool enabled, int power)
+        {
+            PowerBoxSDK.PB_ERROR_TYPE result;
+            Exception error = null;
+            try
+            {
+                lock (_sdkLock)
+                {
+                    PowerBoxSDK.PB_DEW_PORT_CONFIG config = new PowerBoxSDK.PB_DEW_PORT_CONFIG();
+                    config.mask = PowerBoxSDK.MASK_PORT_ENABLE | PowerBoxSDK.MASK_PORT_POWER;
+                    config.index = (uint)port.Index;
+                    config.enabled = enabled ? 1 : 0;
+                    config.power = power;
+
+                    result = PowerBoxSDK.PBSetDewPortConfig(deviceId, ref config);
+                    if (result == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
+                        bool wasHardwareUpdate = _isHardwareUpdate.Value;
+                        _isHardwareUpdate.Value = true;
+                        try
+                        {
+                            // Switching off sets the power to 0 in the box
+                            port.SetPower = enabled ? power : 0;
+                            port.Enabled = enabled;
+                        }
+                        finally
+                        {
+                            _isHardwareUpdate.Value = wasHardwareUpdate;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                result = PowerBoxSDK.PB_ERROR_TYPE.PB_ERROR_COMMUNICATION;
+                error = ex;
+            }
+
+            // Notifications outside the lock, they may wait for the UI thread
+            if (result != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+            {
+                ShowPortError($"Dew #{port.Index + 1}", result, error);
+                RefreshDewPortConfig(port.Index);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Sets state and power of the PWM port with a single SDK call (see ApplyDewPortConfig).
+        /// </summary>
+        private PowerBoxSDK.PB_ERROR_TYPE ApplyPWMPortConfig(PowerBoxPWMPort port, bool enabled, int power)
+        {
+            PowerBoxSDK.PB_ERROR_TYPE result;
+            Exception error = null;
+            try
+            {
+                lock (_sdkLock)
+                {
+                    PowerBoxSDK.PB_PWM_PORT_CONFIG config = new PowerBoxSDK.PB_PWM_PORT_CONFIG();
+                    config.mask = PowerBoxSDK.MASK_PORT_ENABLE | PowerBoxSDK.MASK_PORT_POWER;
+                    config.enabled = enabled ? 1 : 0;
+                    config.power = power;
+
+                    result = PowerBoxSDK.PBSetPWMPortConfig(deviceId, ref config);
+                    if (result == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
+                        bool wasHardwareUpdate = _isHardwareUpdate.Value;
+                        _isHardwareUpdate.Value = true;
+                        try
+                        {
+                            // Switching off sets the power to 0 in the box
+                            port.SetPower = enabled ? power : 0;
+                            port.Enabled = enabled;
+                        }
+                        finally
+                        {
+                            _isHardwareUpdate.Value = wasHardwareUpdate;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                result = PowerBoxSDK.PB_ERROR_TYPE.PB_ERROR_COMMUNICATION;
+                error = ex;
+            }
+
+            if (result != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+            {
+                ShowPortError("PWM port", result, error);
+                RefreshPWMPortConfig();
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Shows and logs a failed dew/PWM port configuration. Dew port names start with "Dew".
+        /// </summary>
+        private static void ShowPortError(string name, PowerBoxSDK.PB_ERROR_TYPE result, Exception error)
+        {
+            // Only dew ports have an auto mode and a threshold
+            bool isDew = name.StartsWith("Dew", StringComparison.Ordinal);
+            string pinsBoxHint = isDew ? "e.g. PWM not set up, or the port is in auto mode" : "e.g. PWM not set up";
+            string invalidHint = isDew ? "power or threshold out of range" : "power out of range";
+
+            if (error != null)
+            {
+                Logger.Error($"{name}: error setting the configuration: {error}");
+                Notification.ShowError($"{name}: error setting the configuration: {error.Message}");
+            }
+            else if (result == PowerBoxSDK.PB_ERROR_TYPE.PB_ERROR_INVALID_PARAMETER)
+            {
+                Logger.Error($"{name}: invalid value ({result})");
+                Notification.ShowError($"Failed to set {name} configuration: invalid value ({invalidHint}).");
+            }
+            else
+            {
+                Logger.Error($"{name}: failed to set the configuration ({result})");
+                Notification.ShowError($"Failed to set {name} configuration ({result}), see log. PinsBox: {pinsBoxHint}; serial PowerBox: communication error.");
+            }
         }
 
         private bool SetBuckPortConfig(PowerBoxBuckPort port, uint mask)
@@ -1920,19 +2071,21 @@ namespace NINA.PINS.Drivers
                 config.enabled = port.Enabled ? 1 : 0;
                 config.power = port.SetPower;
 
+                PowerBoxSDK.PB_ERROR_TYPE result;
                 lock (_sdkLock)
                 {
-                    if (PowerBoxSDK.PBSetPWMPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
-                    {
-                        return true;
-                    }
+                    result = PowerBoxSDK.PBSetPWMPortConfig(deviceId, ref config);
                 }
-                Notification.ShowError("Failed to set PWM port configuration.");
+                if (result == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
+                    return true;
+                }
+                ShowPortError("PWM port", result, null);
                 return false;
             }
             catch (Exception ex)
             {
-                Notification.ShowError($"Error setting port config: {ex.Message}");
+                ShowPortError("PWM port", PowerBoxSDK.PB_ERROR_TYPE.PB_ERROR_COMMUNICATION, ex);
                 return false;
             }
         }
@@ -1975,6 +2128,7 @@ namespace NINA.PINS.Drivers
 
         private void RefreshDewPortConfig(int index)
         {
+            bool wasHardwareUpdate = _isHardwareUpdate.Value;
             _isHardwareUpdate.Value = true;
             try
             {
@@ -1988,7 +2142,7 @@ namespace NINA.PINS.Drivers
                 }
             }
             catch { }
-            finally { _isHardwareUpdate.Value = false; }
+            finally { _isHardwareUpdate.Value = wasHardwareUpdate; }
         }
 
         private void RefreshBuckPortConfig()
@@ -2012,6 +2166,7 @@ namespace NINA.PINS.Drivers
 
         private void RefreshPWMPortConfig()
         {
+            bool wasHardwareUpdate = _isHardwareUpdate.Value;
             _isHardwareUpdate.Value = true;
             try
             {
@@ -2025,7 +2180,7 @@ namespace NINA.PINS.Drivers
                 }
             }
             catch { }
-            finally { _isHardwareUpdate.Value = false; }
+            finally { _isHardwareUpdate.Value = wasHardwareUpdate; }
         }
 
         private void RefreshWiFiConfig()

@@ -82,6 +82,19 @@ namespace NINA.PINS.Drivers
             {
                 if (IsPowerBoxAvailable)
                 {
+                    // Outside 0 to MaxBrightness the box would get a wrong value (it is cast
+                    // to the PWM width there, e.g. -5 -> 251 = almost full brightness)
+                    int max = MaxBrightness;
+                    if (value < 0 || value > max)
+                    {
+                        string message = $"Cannot set Brightness to {value}: valid range is 0 - {max}.";
+                        Logger.Error(message);
+                        // Also shown: callers that do not await the write (e.g. the
+                        // Advanced API) never observe the exception
+                        Notification.ShowError(message);
+                        throw new System.ArgumentOutOfRangeException(nameof(value), message);
+                    }
+
                     PINS.ConnectedPowerBox.PWMPorts[0].SetPower = value;
                 }
                 else
