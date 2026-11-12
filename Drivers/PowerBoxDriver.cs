@@ -136,7 +136,8 @@ namespace NINA.PINS.Drivers
         private WiFi _wifi;
 
         // Track actual port counts reported by hardware
-        private int _actualPowerPortCount = 0;
+        // -1: not known yet (all rows of the 12 V view are shown)
+        private int _actualPowerPortCount = -1;
         public int ActualPowerPortCount => _actualPowerPortCount;
 
         // -1: not known yet (all rows of the USB view are shown)
@@ -443,6 +444,13 @@ namespace NINA.PINS.Drivers
                 DriverVersion = "error";
             }
 
+            // Port counts unknown until this connection has read them (a failed status read
+            // must not keep the counts of an earlier session)
+            _actualPowerPortCount = -1;
+            _actualUSBPortCount = -1;
+            OnPropertyChanged(nameof(ActualPowerPortCount));
+            OnPropertyChanged(nameof(ActualUSBPortCount));
+
             // Fetch initial configuration
             _isHardwareUpdate.Value = true;
             try
@@ -466,10 +474,20 @@ namespace NINA.PINS.Drivers
                     // Fetch initial power port configuration
                     try
                     {
-                        PowerBoxSDK.PBGetPowerPortStatus(deviceId, out var status);
-                        _actualPowerPortCount = status.numPorts;
+                        if (PowerBoxSDK.PBGetPowerPortStatus(deviceId, out var status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                        {
+                            _actualPowerPortCount = Math.Max(0, Math.Min(status.numPorts, PowerBoxSDK.PB_MAX_POWER_PORTS));
+                            OnPropertyChanged(nameof(ActualPowerPortCount));
+                            // ReadOnly (port without a switch), state and flags are known from
+                            // the status: apply it now, before the switches are set up and
+                            // before the first poll
+                            lock (_sdkLock)
+                            {
+                                _powerPorts.UpdateFromStatus(status);
+                            }
+                        }
                         PowerBoxSDK.PB_POWER_PORT_CONFIG config = new PowerBoxSDK.PB_POWER_PORT_CONFIG();
-                        for (uint i = 0; i < status.numPorts; ++i)
+                        for (uint i = 0; i < Math.Max(0, _actualPowerPortCount); ++i)
                         {
                             config.index = i;
                             if (PowerBoxSDK.PBGetPowerPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
@@ -956,13 +974,17 @@ namespace NINA.PINS.Drivers
             {
                 if (port.ReadOnly)
                 {
-                    AddSwitch(new PowerBoxSwitch(() => port.Name, () => $"12V #{port.Index + 1}: always on (Current [A])", () => port.Current, switchId));
+                    AddSwitch(new PowerBoxSwitch(() => port.Name, () => port.Overcurrent
+                        ? $"12V #{port.Index + 1}: always on, over current (not switchable)"
+                        : $"12V #{port.Index + 1}: always on (Current [A])", () => port.Current, switchId));
                 }
                 else
                 {
                     AddSwitch(new PowerBoxWritableSwitch(
                         () => port.Name,
-                        () => $"12V #{port.Index + 1}: {(port.Enabled ? port.Current : 0)}A",
+                        () => port.Overcurrent
+                            ? $"12V #{port.Index + 1}: {OvercurrentText(port.Enabled)}"
+                            : $"12V #{port.Index + 1}: {(port.Enabled ? port.Current : 0)}A",
                         () => port.Enabled ? 1 : 0,
                         (value) => port.Enabled = value != 0,
                         switchId));
@@ -1029,7 +1051,9 @@ namespace NINA.PINS.Drivers
             {
                 AddSwitch(new PowerBoxWritableSwitch(
                     () => port.Name,
-                    () => $"Dew #{port.Index + 1}: {(port.Enabled ? Math.Round(port.Power * 100.0 / port.Resolution, 1) : 0)}% ({(port.Enabled ? Math.Round(port.Current, 2) : 0)}A)",
+                    () => port.Overcurrent
+                        ? $"Dew #{port.Index + 1}: {OvercurrentText(port.Enabled)}{(port.AutoMode && !port.Enabled ? ", switch auto mode off and on to resume" : "")}"
+                        : $"Dew #{port.Index + 1}: {(port.Enabled ? Math.Round(port.Power * 100.0 / port.Resolution, 1) : 0)}% ({(port.Enabled ? Math.Round(port.Current, 2) : 0)}A)",
                     () => port.Enabled ? port.Power : 0,
                     (value) =>
                     {
@@ -1062,7 +1086,9 @@ namespace NINA.PINS.Drivers
             var buckPort = BuckPorts.Ports[0];
             AddSwitch(new PowerBoxWritableSwitch(
                             () => buckPort.Name,
-                            () => $"Buck converter: {(buckPort.Enabled ? Math.Round(buckPort.Power, 2) : 0)}V ({(buckPort.Enabled ? Math.Round(buckPort.Current, 2) : 0)}A)",
+                            () => buckPort.Overcurrent
+                                ? $"Buck converter: {OvercurrentText(buckPort.Enabled)}"
+                                : $"Buck converter: {(buckPort.Enabled ? Math.Round(buckPort.Voltage, 2) : 0)}V ({(buckPort.Enabled ? Math.Round(buckPort.Current, 2) : 0)}A)",
                             () =>
                             {
                                 return buckPort.Enabled == false ? 0 : Math.Round(buckPort.SetVoltage, 2);
@@ -1151,7 +1177,9 @@ namespace NINA.PINS.Drivers
             var pwmPort = PWMPorts.Ports[0];
             AddSwitch(new PowerBoxWritableSwitch(
                 () => pwmPort.Name,
-                () => $"PWM port: {(pwmPort.Enabled ? Math.Round(pwmPort.Power * 100.0 / pwmPort.Resolution, 1) : 0)}% ({(pwmPort.Enabled ? Math.Round(pwmPort.Current, 2) : 0)}A)",
+                () => pwmPort.Overcurrent
+                    ? $"PWM port: {OvercurrentText(pwmPort.Enabled)}"
+                    : $"PWM port: {(pwmPort.Enabled ? Math.Round(pwmPort.Power * 100.0 / pwmPort.Resolution, 1) : 0)}% ({(pwmPort.Enabled ? Math.Round(pwmPort.Current, 2) : 0)}A)",
                 () =>
                 {
                     if (pwmPort.Enabled == false)
@@ -1180,6 +1208,15 @@ namespace NINA.PINS.Drivers
 
             _pollSwitches = _scannedSwitches.ToArray();
             Logger.Trace($"Total switches configured: {_pollSwitches.Length}");
+        }
+
+        /// <summary>
+        /// Over current text for a switch description; still on: the switch-off failed or is
+        /// not reported yet.
+        /// </summary>
+        private static string OvercurrentText(bool stillOn)
+        {
+            return stillOn ? "over current, switch-off failed" : "over current, switched off";
         }
 
         /// <summary>
@@ -1333,6 +1370,12 @@ namespace NINA.PINS.Drivers
                             // write of that value would be skipped as unchanged)
                             RefreshDewPortConfig(port.Index);
                         }
+                        if ((mask & PowerBoxSDK.MASK_PORT_ENABLE) != 0 || e.PropertyName == nameof(PowerBoxDewPort.AutoMode))
+                        {
+                            // Switching (and auto mode on) changes the over current flag: show it at
+                            // once, so the over current button does not flip under the mouse
+                            RefreshDewPortStatus();
+                        }
                     }
                 };
             }
@@ -1359,6 +1402,11 @@ namespace NINA.PINS.Drivers
                     if (!SetBuckPortConfig(buck, mask))
                     {
                         RefreshBuckPortConfig();
+                    }
+                    if ((mask & PowerBoxSDK.MASK_PORT_ENABLE) != 0)
+                    {
+                        // Switching changes the over current flag: show it at once
+                        RefreshBuckPortStatus();
                     }
                 }
             };
@@ -1392,6 +1440,11 @@ namespace NINA.PINS.Drivers
                     if (!SetPWMPortConfig(pwm, mask))
                     {
                         RefreshPWMPortConfig();
+                    }
+                    if ((mask & PowerBoxSDK.MASK_PORT_ENABLE) != 0)
+                    {
+                        // Switching changes the over current flag: show it at once
+                        RefreshPWMPortStatus();
                     }
                 }
             };
@@ -1728,18 +1781,23 @@ namespace NINA.PINS.Drivers
                 config.enabled = port.Enabled ? 1 : 0;
                 config.bootState = port.BootState ? 1 : 0;
 
+                PowerBoxSDK.PB_ERROR_TYPE result;
                 lock (_sdkLock)
                 {
-                    if (PowerBoxSDK.PBSetPowerPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
-                    {
-                        return true;
-                    }
+                    result = PowerBoxSDK.PBSetPowerPortConfig(deviceId, ref config);
                 }
-                Notification.ShowError("Failed to set power port configuration.");
+                if (result == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
+                    return true;
+                }
+                // Outside the lock (the notification may wait for the UI thread)
+                Logger.Error($"12V #{port.Index + 1} '{port.Name}': failed to set the configuration (mask 0x{mask:X}, enabled {config.enabled}): {result}");
+                Notification.ShowError($"12V #{port.Index + 1}: failed to set the power port configuration ({result}), see log.");
                 return false;
             }
             catch (Exception ex)
             {
+                Logger.Error($"12V #{port.Index + 1} '{port.Name}': error setting the configuration: {ex}");
                 Notification.ShowError($"Error setting port config: {ex.Message}");
                 return false;
             }
@@ -1755,18 +1813,23 @@ namespace NINA.PINS.Drivers
                 config.enabled = port.Enabled ? 1 : 0;
                 config.bootState = port.BootState ? 1 : 0;
 
+                PowerBoxSDK.PB_ERROR_TYPE result;
                 lock (_sdkLock)
                 {
-                    if (PowerBoxSDK.PBSetUSBPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
-                    {
-                        return true;
-                    }
+                    result = PowerBoxSDK.PBSetUSBPortConfig(deviceId, ref config);
                 }
-                Notification.ShowError("Failed to set USB port configuration.");
+                if (result == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
+                    return true;
+                }
+                // Outside the lock (the notification may wait for the UI thread)
+                Logger.Error($"USB #{port.Index + 1} '{port.Name}': failed to set the configuration (mask 0x{mask:X}, enabled {config.enabled}): {result}");
+                Notification.ShowError($"USB #{port.Index + 1}: failed to set the USB port configuration ({result}), see log.");
                 return false;
             }
             catch (Exception ex)
             {
+                Logger.Error($"USB #{port.Index + 1} '{port.Name}': error setting the configuration: {ex}");
                 Notification.ShowError($"Error setting port config: {ex.Message}");
                 return false;
             }
@@ -1869,6 +1932,9 @@ namespace NINA.PINS.Drivers
                 RefreshBuckPortConfig();
             }
 
+            // Switching changes the over current flag: show it at once (switch descriptions)
+            RefreshBuckPortStatus();
+
             return result;
         }
 
@@ -1963,6 +2029,9 @@ namespace NINA.PINS.Drivers
                 RefreshDewPortConfig(port.Index);
             }
 
+            // Switching changes the over current flag: show it at once (switch descriptions)
+            RefreshDewPortStatus();
+
             return result;
         }
 
@@ -2012,6 +2081,9 @@ namespace NINA.PINS.Drivers
                 RefreshPWMPortConfig();
             }
 
+            // Switching changes the over current flag: show it at once (switch descriptions)
+            RefreshPWMPortStatus();
+
             return result;
         }
 
@@ -2022,7 +2094,9 @@ namespace NINA.PINS.Drivers
         {
             // Only dew ports have an auto mode and a threshold
             bool isDew = name.StartsWith("Dew", StringComparison.Ordinal);
-            string pinsBoxHint = isDew ? "e.g. PWM not set up, or the port is in auto mode" : "e.g. PWM not set up";
+            string pinsBoxHint = isDew
+                ? "e.g. PWM not set up, the port is in auto mode, or an over current shutdown is pending (switch the port off)"
+                : "e.g. PWM not set up, or an over current shutdown is pending (switch the port off)";
             string invalidHint = isDew ? "power or threshold out of range" : "power out of range";
 
             if (error != null)
@@ -2136,6 +2210,7 @@ namespace NINA.PINS.Drivers
 
         private void RefreshPowerPortConfig(int index)
         {
+            bool wasHardwareUpdate = _isHardwareUpdate.Value;
             _isHardwareUpdate.Value = true;
             try
             {
@@ -2149,7 +2224,7 @@ namespace NINA.PINS.Drivers
                 }
             }
             catch { }
-            finally { _isHardwareUpdate.Value = false; }
+            finally { _isHardwareUpdate.Value = wasHardwareUpdate; }
         }
 
         private void RefreshPowerPortStatus()
@@ -2188,8 +2263,63 @@ namespace NINA.PINS.Drivers
             finally { _isHardwareUpdate.Value = wasHardwareUpdate; }
         }
 
+        private void RefreshDewPortStatus()
+        {
+            bool wasHardwareUpdate = _isHardwareUpdate.Value;
+            _isHardwareUpdate.Value = true;
+            try
+            {
+                lock (_sdkLock)
+                {
+                    if (PowerBoxSDK.PBGetDewPortStatus(deviceId, out var status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
+                        _dewPorts.UpdateFromStatus(status);
+                    }
+                }
+            }
+            catch { }
+            finally { _isHardwareUpdate.Value = wasHardwareUpdate; }
+        }
+
+        private void RefreshBuckPortStatus()
+        {
+            bool wasHardwareUpdate = _isHardwareUpdate.Value;
+            _isHardwareUpdate.Value = true;
+            try
+            {
+                lock (_sdkLock)
+                {
+                    if (PowerBoxSDK.PBGetBuckPortStatus(deviceId, out var status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
+                        _buckPorts.UpdateFromStatus(status);
+                    }
+                }
+            }
+            catch { }
+            finally { _isHardwareUpdate.Value = wasHardwareUpdate; }
+        }
+
+        private void RefreshPWMPortStatus()
+        {
+            bool wasHardwareUpdate = _isHardwareUpdate.Value;
+            _isHardwareUpdate.Value = true;
+            try
+            {
+                lock (_sdkLock)
+                {
+                    if (PowerBoxSDK.PBGetPWMPortStatus(deviceId, out var status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
+                        _pwmPorts.UpdateFromStatus(status);
+                    }
+                }
+            }
+            catch { }
+            finally { _isHardwareUpdate.Value = wasHardwareUpdate; }
+        }
+
         private void RefreshUSBPortConfig(int index)
         {
+            bool wasHardwareUpdate = _isHardwareUpdate.Value;
             _isHardwareUpdate.Value = true;
             try
             {
@@ -2203,7 +2333,7 @@ namespace NINA.PINS.Drivers
                 }
             }
             catch { }
-            finally { _isHardwareUpdate.Value = false; }
+            finally { _isHardwareUpdate.Value = wasHardwareUpdate; }
         }
 
         private void RefreshDewPortConfig(int index)
@@ -2265,6 +2395,7 @@ namespace NINA.PINS.Drivers
 
         private void RefreshWiFiConfig()
         {
+            bool wasHardwareUpdate = _isHardwareUpdate.Value;
             _isHardwareUpdate.Value = true;
             try
             {
@@ -2278,7 +2409,7 @@ namespace NINA.PINS.Drivers
                 }
             }
             catch { }
-            finally { _isHardwareUpdate.Value = false; }
+            finally { _isHardwareUpdate.Value = wasHardwareUpdate; }
         }
 
         private void UpdateFromDeviceStatus(PowerBoxSDK.PB_DEVICE_STATUS status)

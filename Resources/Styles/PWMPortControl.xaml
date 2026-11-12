@@ -31,11 +31,31 @@
                 Text="(" />
             <TextBlock VerticalAlignment="Center" Text="{Binding PortText, ElementName=PWMPortControlRoot}" />
             <TextBlock VerticalAlignment="Center" Text=")" />
-            <Button MinWidth="80" Margin="5,0,0,0">
-                <Button.Command>
-                    <Binding Path="PortCommand" />
-                </Button.Command>
-                <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Clear" />
+            <!--  Port still on: the over current switch-off failed (the box retries it)  -->
+            <TextBlock
+                Margin="5,0,0,0"
+                VerticalAlignment="Center"
+                Text="- switch-off failed, port still on"
+                Visibility="{Binding PortState, ElementName=PWMPortControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}" />
+            <!--  Switching the port clears the over current flag: "Switch on" for a port that was
+                  switched off, "Switch off" for a port whose switch-off failed  -->
+            <Button
+                MinWidth="80"
+                Margin="5,0,0,0"
+                Click="OvercurrentButton_Click"
+                ToolTip="Switches the port and clears the over current flag">
+                <TextBlock Foreground="{StaticResource ButtonForegroundBrush}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="Switch on" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding PortState, ElementName=PWMPortControlRoot}" Value="True">
+                                    <Setter Property="Text" Value="Switch off" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </Button>
         </StackPanel>
         <StackPanel Margin="0,5,0,0" Orientation="Horizontal">

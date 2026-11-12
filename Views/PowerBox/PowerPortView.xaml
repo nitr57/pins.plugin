@@ -2,6 +2,7 @@
     x:Class="NINA.PINS.Views.PowerBox.PowerPortView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:NINA.PINS.Resources.Converters"
     xmlns:ctrl="clr-namespace:NINA.PINS.Resources.Styles"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:NINA.PINS.Views.PowerBox"
@@ -10,32 +11,27 @@
     d:DesignWidth="800"
     mc:Ignorable="d">
     <UserControl.Resources>
-        <local:PortTemplateSelector x:Key="PortTemplateSelector">
-            <!--  Port 0: Always on (read-only)  -->
-            <local:PortTemplateSelector.AlwaysOnTemplate>
-                <DataTemplate>
-                    <ctrl:AOnPortControl
-                        PortCurrent="{Binding Current}"
-                        PortName="12V Port #0"
-                        PortNumber="{Binding Index}"
-                        PortOvercurrent="{Binding Overcurrent}"
-                        PortText="{Binding Name}" />
-                </DataTemplate>
-            </local:PortTemplateSelector.AlwaysOnTemplate>
-            <!--  Ports 1-x: Controllable  -->
-            <local:PortTemplateSelector.ControllableTemplate>
-                <DataTemplate>
-                    <ctrl:PortControl
-                        PortBootstrap="{Binding BootState}"
-                        PortCurrent="{Binding Current}"
-                        PortName="{Binding Index, StringFormat='12V Port #{0}'}"
-                        PortNumber="{Binding Index}"
-                        PortOvercurrent="{Binding Overcurrent}"
-                        PortState="{Binding Enabled}"
-                        PortText="{Binding Name}" />
-                </DataTemplate>
-            </local:PortTemplateSelector.ControllableTemplate>
-        </local:PortTemplateSelector>
+        <converters:PortIndexToVisibilityConverter x:Key="PortIndexToVisibilityConverter" />
+        <!--  Port that cannot be switched (read-only, e.g. PinsBox port 0): always on  -->
+        <DataTemplate x:Key="AlwaysOnTemplate">
+            <ctrl:AOnPortControl
+                PortCurrent="{Binding Current}"
+                PortName="{Binding Index, StringFormat='12V Port #{0}'}"
+                PortNumber="{Binding Index}"
+                PortOvercurrent="{Binding Overcurrent}"
+                PortText="{Binding Name}" />
+        </DataTemplate>
+        <!--  Switchable port  -->
+        <DataTemplate x:Key="ControllableTemplate">
+            <ctrl:PortControl
+                PortBootstrap="{Binding BootState}"
+                PortCurrent="{Binding Current}"
+                PortName="{Binding Index, StringFormat='12V Port #{0}'}"
+                PortNumber="{Binding Index}"
+                PortOvercurrent="{Binding Overcurrent}"
+                PortState="{Binding Enabled}"
+                PortText="{Binding Name}" />
+        </DataTemplate>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -55,7 +51,40 @@
 
         <!--  Power Ports  -->
         <GroupBox Grid.Row="1" Header="Power ports">
-            <ItemsControl ItemTemplateSelector="{StaticResource PortTemplateSelector}" ItemsSource="{Binding PowerPorts.Ports}">
+            <!--  Only as many rows as the box has ports; the template follows ReadOnly, which is
+                  known from the port status (a DataTemplateSelector is evaluated only once)  -->
+            <ItemsControl ItemsSource="{Binding PowerPorts.Ports}">
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Visibility">
+                            <Setter.Value>
+                                <MultiBinding Converter="{StaticResource PortIndexToVisibilityConverter}">
+                                    <Binding Path="Index" />
+                                    <Binding Path="DataContext.ActualPowerPortCount" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                </MultiBinding>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ContentControl
+                            Content="{Binding}"
+                            Focusable="False"
+                            IsTabStop="False">
+                            <ContentControl.Style>
+                                <Style TargetType="ContentControl">
+                                    <Setter Property="ContentTemplate" Value="{StaticResource ControllableTemplate}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ReadOnly}" Value="True">
+                                            <Setter Property="ContentTemplate" Value="{StaticResource AlwaysOnTemplate}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ContentControl.Style>
+                        </ContentControl>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel />
@@ -75,7 +104,7 @@
                     PortMinValue="{Binding BuckPorts[0].MinVoltage}"
                     PortName="Buck converter"
                     PortNumber="{Binding BuckPorts[0].Index}"
-                    PortOvercurrent="{Binding BuckPorts[0].OverCurrent}"
+                    PortOvercurrent="{Binding BuckPorts[0].Overcurrent}"
                     PortState="{Binding BuckPorts[0].Enabled}"
                     PortText="{Binding BuckPorts[0].Name}"
                     PortValue="{Binding BuckPorts[0].Voltage}" />
@@ -86,7 +115,7 @@
                     PortDutyCycle="{Binding PWMPorts[0].Resolution}"
                     PortName="PWM port"
                     PortNumber="{Binding PWMPorts[0].Index}"
-                    PortOvercurrent="{Binding PWMPorts[0].OverCurrent}"
+                    PortOvercurrent="{Binding PWMPorts[0].Overcurrent}"
                     PortState="{Binding PWMPorts[0].Enabled}"
                     PortText="{Binding PWMPorts[0].Name}"
                     PortValue="{Binding PWMPorts[0].Power}" />

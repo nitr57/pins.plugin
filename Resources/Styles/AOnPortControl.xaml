@@ -10,6 +10,10 @@
     d:DesignHeight="450"
     d:DesignWidth="800"
     mc:Ignorable="d">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <local:NaNToDashConverter x:Key="NaNToDashConverter" />
+    </UserControl.Resources>
     <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
         <TextBox
             x:Name="MyTextBox"
@@ -33,12 +37,21 @@
             Margin="10,0,0,0"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            Text="{Binding PortCurrent, StringFormat='{}{0} A', ElementName=AOnPortControlRoot}" />
+            Text="{Binding PortCurrent, ElementName=AOnPortControlRoot, Converter={StaticResource NaNToDashConverter}, ConverterParameter=A}" />
         <TextBlock
             Height="18"
             Margin="10,0,0,0"
             HorizontalAlignment="Left"
             VerticalAlignment="Center"
             Text="Always on" />
+        <!--  This port cannot be switched off: the box only reports the over current  -->
+        <TextBlock
+            Height="18"
+            Margin="10,0,0,0"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Foreground="Red"
+            Text="Over current (not switchable)"
+            Visibility="{Binding PortOvercurrent, ElementName=AOnPortControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}" />
     </StackPanel>
 </UserControl>

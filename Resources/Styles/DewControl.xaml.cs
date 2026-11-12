@@ -13,6 +13,33 @@ namespace NINA.PINS.Resources.Styles {
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Over current button. Port still on (the over current switch-off failed): auto mode off
+        /// first (the box does not switch a port in auto mode), then switch off. Port off in auto
+        /// mode: auto mode off and on again, which releases the over current lockout in the box.
+        /// Port off in manual mode: switch on (clears the flag). SetCurrentValue keeps the two-way
+        /// bindings; each change is sent to the box at once.
+        /// </summary>
+        private void OvercurrentButton_Click(object sender, RoutedEventArgs e) {
+            if (PortState) {
+                if (PortAutoDew) {
+                    SetCurrentValue(PortAutoDewProperty, false);
+                    if (PortAutoDew) {
+                        // Auto mode could not be switched off (read back): the box would refuse
+                        return;
+                    }
+                }
+                SetCurrentValue(PortStateProperty, false);
+            } else if (PortAutoDew) {
+                SetCurrentValue(PortAutoDewProperty, false);
+                if (!PortAutoDew) {
+                    SetCurrentValue(PortAutoDewProperty, true);
+                }
+            } else {
+                SetCurrentValue(PortStateProperty, true);
+            }
+        }
+
         private void SetButton_Click(object sender, RoutedEventArgs e) {
             // Find the stepper control and read its current staged value
             var stepper = FindIntStepperControl(this);

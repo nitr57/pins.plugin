@@ -13,6 +13,16 @@ namespace NINA.PINS.Resources.Styles {
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Over current: switches a port that was switched off on again, or retries switching
+        /// off a port whose over current switch-off failed (still on). Switching clears the
+        /// over current flag in the box. SetCurrentValue keeps the two-way binding to the port
+        /// model.
+        /// </summary>
+        private void OvercurrentButton_Click(object sender, RoutedEventArgs e) {
+            SetCurrentValue(PortStateProperty, !PortState);
+        }
+
         private void SetButton_Click(object sender, RoutedEventArgs e) {
             // Find the stepper control and read its current staged value
             var stepper = FindIntStepperControl(this);
