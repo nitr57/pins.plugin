@@ -645,10 +645,19 @@ namespace NINA.PINS.Drivers
                                             if (mediator?.GetInfo().Connected == true)
                                             {
                                                 var weatherData = mediator.GetInfo();
-                                                if (!double.IsNaN(weatherData.Temperature))
+                                                // Only a plausible reading: NaN means no reading, and the
+                                                // PowerBox rejects values outside its ranges. Checked as
+                                                // sent (float); slightly above 100 % (fog) counts as 100 %
+                                                float extTemperature = Convert.ToSingle(weatherData.Temperature);
+                                                float extHumidity = Convert.ToSingle(weatherData.Humidity);
+                                                if (extHumidity > 100f && extHumidity <= 105f)
+                                                {
+                                                    extHumidity = 100f;
+                                                }
+                                                if (IsPlausibleWeather(extTemperature, extHumidity))
                                                 {
                                                     _temperature = weatherData.Temperature;
-                                                    _humidity = weatherData.Humidity;
+                                                    _humidity = Math.Min(weatherData.Humidity, 100.0);
                                                     _dewPoint = weatherData.DewPoint;
                                                     OnPropertyChanged(nameof(Temperature));
                                                     OnPropertyChanged(nameof(Humidity));
@@ -657,8 +666,8 @@ namespace NINA.PINS.Drivers
                                                     // If we fetched data successfully, we need to set it to the powerbox so that dew control can work
                                                     PowerBoxSDK.PB_DEVICE_CONFIG config = new PowerBoxSDK.PB_DEVICE_CONFIG();
                                                     config.mask = PowerBoxSDK.MASK_PB_EXT_TEMPERATURE | PowerBoxSDK.MASK_PB_EXT_HUMIDITY;
-                                                    config.temperature = Convert.ToSingle(Temperature);
-                                                    config.humidity = Convert.ToSingle(Humidity);
+                                                    config.temperature = extTemperature;
+                                                    config.humidity = extHumidity;
                                                     PowerBoxSDK.PBSetConfig(deviceId, ref config);
                                                 }
                                             }
@@ -2576,18 +2585,32 @@ namespace NINA.PINS.Drivers
             }
         }
 
+        // Temperature and humidity the PowerBox accepts as external values (NaN fails)
+        private static bool IsPlausibleWeather(float temperature, float humidity)
+        {
+            return temperature > -50 && temperature < 80 && humidity > 0 && humidity <= 100;
+        }
+
+        // Starts the tone and returns at once. A failure is a warning: a missing
+        // beep is no fault of the equipment (and must not trigger an alarm itself)
         public bool Beep(int volume, int durationMs)
         {
             try
             {
+                PowerBoxSDK.PB_ERROR_TYPE result;
                 lock (_sdkLock)
                 {
-                    return PowerBoxSDK.PBBeep(deviceId, volume, durationMs) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS;
+                    result = PowerBoxSDK.PBBeep(deviceId, volume, durationMs);
                 }
+                if (result != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                {
+                    Logger.Warning($"PowerBox beep failed: {result}");
+                }
+                return result == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS;
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error during beep: {ex}");
+                Logger.Warning($"PowerBox beep failed: {ex.Message}");
                 return false;
             }
         }
