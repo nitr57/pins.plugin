@@ -2,8 +2,10 @@
 using NINA.Plugin;
 using NINA.Plugin.Interfaces;
 using NINA.PINS.Drivers;
+using NINA.PINS.SDK;
 using System;
 using System.ComponentModel.Composition;
+using System.Threading.Tasks;
 
 namespace NINA.PINS {
 
@@ -28,6 +30,16 @@ namespace NINA.PINS {
             ConnectedMeteoStation = null;
             ConnectedPowerBox?.Disconnect();
             ConnectedPowerBox = null;
+
+            // Fallback for an exit without plugin teardown: no SDK log callback into a runtime
+            // that is shutting down
+            PowerBoxSdkLog.Unregister();
+        }
+
+        public override Task Teardown() {
+            // N.I.N.A. closes its logger after the plugin teardown: stop forwarding SDK messages
+            PowerBoxSdkLog.Unregister();
+            return base.Teardown();
         }
     }
 }

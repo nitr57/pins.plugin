@@ -352,6 +352,9 @@ namespace NINA.PINS.Drivers
 
         public static IList<int> ScanDeviceIds()
         {
+            // SDK messages into the N.I.N.A. log, before the first SDK call (the scan logs)
+            PowerBoxSdkLog.EnsureRegistered();
+
             var list = new List<int>();
             int number = 0;
             int[] ids = new int[PowerBoxSDK.PB_MAX_NUM];
@@ -367,8 +370,8 @@ namespace NINA.PINS.Drivers
                 }
                 else if (result == PowerBoxSDK.PB_ERROR_TYPE.PB_ERROR_INVALID_STATE)
                 {
-                    // The SDK log (stderr) has the details; this is the only trace in NINA
-                    const string msg = "PinsBox present but not usable (e.g. in use by another process or initialization failed, details in the SDK log)";
+                    // The SDK messages ("PowerBox SDK: ...") around this entry have the details
+                    const string msg = "PinsBox present but not usable (e.g. in use by another process or initialization failed, details in the PowerBox SDK messages of the log)";
                     Logger.Error(msg);
                     Notification.ShowWarning(msg);
                 }
@@ -386,13 +389,20 @@ namespace NINA.PINS.Drivers
 
         public async Task<bool> Connect(CancellationToken token)
         {
+            PowerBoxSdkLog.EnsureRegistered();
+
+            PowerBoxSDK.PB_ERROR_TYPE openResult;
             lock (_sdkLock)
             {
-                if (PowerBoxSDK.PBOpen(deviceId) != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
-                {
-                    Connected = false;
-                    return Connected;
-                }
+                openResult = PowerBoxSDK.PBOpen(deviceId);
+            }
+            if (openResult != PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+            {
+                // Outside the lock; the reason is in the PowerBox SDK messages around this entry
+                Logger.Error($"{Name}: could not be opened ({openResult})");
+                Notification.ShowError($"{Name}: could not be opened ({openResult}), see log.");
+                Connected = false;
+                return Connected;
             }
 
             // Try get SDK version

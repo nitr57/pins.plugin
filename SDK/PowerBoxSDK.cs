@@ -299,6 +299,22 @@ namespace NINA.PINS.SDK
             public int channel;
         }
 
+        // SDK log messages (PBSetLogCallback): level PB_LOG_*, message UTF-8, valid only
+        // during the call. Called from SDK threads, possibly while SDK locks are held.
+        public const int PB_LOG_ERROR = 0;
+        public const int PB_LOG_WARNING = 1;
+        public const int PB_LOG_INFO = 2;
+        public const int PB_LOG_DEBUG = 3;
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void PBLogCallback(int level, IntPtr message);
+
+        [DllImport(DLL, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PBSetLogCallback(PBLogCallback callback);
+
+        [DllImport(DLL, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PBSetLogLevel(int level);
+
         [DllImport(DLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern PB_ERROR_TYPE PBScan(out int number, [Out] int[] ids);
 
