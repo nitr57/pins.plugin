@@ -13,6 +13,9 @@
     d:DesignHeight="450"
     d:DesignWidth="800"
     mc:Ignorable="d">
+    <UserControl.Resources>
+        <ctrl:NaNToDashConverter x:Key="NaNToDashConverter" />
+    </UserControl.Resources>
     <Grid>
         <Grid>
             <Grid.RowDefinitions>
@@ -106,7 +109,7 @@
                                         <TextBlock Text="Current" />
                                         <TextBlock
                                             Margin="5,0,0,0"
-                                            Text="{Binding Supply5A, StringFormat='{}{0} A'}"
+                                            Text="{Binding Supply5A, Converter={StaticResource NaNToDashConverter}, ConverterParameter=A}"
                                             TextWrapping="WrapWithOverflow" />
                                     </UniformGrid>
                                 </Border>
@@ -118,7 +121,7 @@
                                         <TextBlock Text="Power" />
                                         <TextBlock
                                             Margin="5,0,0,0"
-                                            Text="{Binding Supply5W, StringFormat='{}{0} W'}"
+                                            Text="{Binding Supply5W, Converter={StaticResource NaNToDashConverter}, ConverterParameter=W}"
                                             TextWrapping="WrapWithOverflow" />
                                     </UniformGrid>
                                 </Border>

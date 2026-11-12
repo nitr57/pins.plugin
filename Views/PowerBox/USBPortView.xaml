@@ -2,6 +2,7 @@
     x:Class="NINA.PINS.Views.PowerBox.USBPortView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:NINA.PINS.Resources.Converters"
     xmlns:ctrl="clr-namespace:NINA.PINS.Resources.Styles"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:NINA.PINS.Views.PowerBox"
@@ -9,6 +10,9 @@
     d:DesignHeight="450"
     d:DesignWidth="800"
     mc:Ignorable="d">
+    <UserControl.Resources>
+        <converters:PortIndexToVisibilityConverter x:Key="PortIndexToVisibilityConverter" />
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -24,7 +28,7 @@
             EnvUpTime="{Binding UpTimeFormatted}"
             EnvVoltage="{Binding PowerSupply.Supply12V}" />
 
-        <!--  USB Ports  -->
+        <!--  USB Ports (only as many rows as the box has ports)  -->
         <GroupBox Grid.Row="1" Header="USB ports">
             <StackPanel>
                 <ctrl:PortControl
@@ -32,9 +36,10 @@
                     PortCurrent="{Binding USBPorts[0].Current}"
                     PortName="USB3 Port #1"
                     PortNumber="{Binding USBPorts[0].Index}"
-                    PortOvercurrent="{Binding USBPorts[0].OverCurrent}"
+                    PortOvercurrent="{Binding USBPorts[0].Overcurrent}"
                     PortState="{Binding USBPorts[0].Enabled}"
-                    PortText="{Binding USBPorts[0].Name}" />
+                    PortText="{Binding USBPorts[0].Name}"
+                    Visibility="{Binding ActualUSBPortCount, Converter={StaticResource PortIndexToVisibilityConverter}, ConverterParameter=0}" />
                 <ctrl:PortControl
                     PortBootstrap="{Binding USBPorts[1].BootState}"
                     PortCurrent="{Binding USBPorts[1].Current}"
@@ -42,7 +47,8 @@
                     PortNumber="{Binding USBPorts[1].Index}"
                     PortOvercurrent="{Binding USBPorts[1].Overcurrent}"
                     PortState="{Binding USBPorts[1].Enabled}"
-                    PortText="{Binding USBPorts[1].Name}" />
+                    PortText="{Binding USBPorts[1].Name}"
+                    Visibility="{Binding ActualUSBPortCount, Converter={StaticResource PortIndexToVisibilityConverter}, ConverterParameter=1}" />
                 <ctrl:PortControl
                     PortBootstrap="{Binding USBPorts[2].BootState}"
                     PortCurrent="{Binding USBPorts[2].Current}"
@@ -50,7 +56,8 @@
                     PortNumber="{Binding USBPorts[2].Index}"
                     PortOvercurrent="{Binding USBPorts[2].Overcurrent}"
                     PortState="{Binding USBPorts[2].Enabled}"
-                    PortText="{Binding USBPorts[2].Name}" />
+                    PortText="{Binding USBPorts[2].Name}"
+                    Visibility="{Binding ActualUSBPortCount, Converter={StaticResource PortIndexToVisibilityConverter}, ConverterParameter=2}" />
                 <ctrl:PortControl
                     PortBootstrap="{Binding USBPorts[3].BootState}"
                     PortCurrent="{Binding USBPorts[3].Current}"
@@ -58,7 +65,8 @@
                     PortNumber="{Binding USBPorts[3].Index}"
                     PortOvercurrent="{Binding USBPorts[3].Overcurrent}"
                     PortState="{Binding USBPorts[3].Enabled}"
-                    PortText="{Binding USBPorts[3].Name}" />
+                    PortText="{Binding USBPorts[3].Name}"
+                    Visibility="{Binding ActualUSBPortCount, Converter={StaticResource PortIndexToVisibilityConverter}, ConverterParameter=3}" />
                 <ctrl:PortControl
                     PortBootstrap="{Binding USBPorts[4].BootState}"
                     PortCurrent="{Binding USBPorts[4].Current}"
@@ -66,7 +74,8 @@
                     PortNumber="{Binding USBPorts[4].Index}"
                     PortOvercurrent="{Binding USBPorts[4].Overcurrent}"
                     PortState="{Binding USBPorts[4].Enabled}"
-                    PortText="{Binding USBPorts[4].Name}" />
+                    PortText="{Binding USBPorts[4].Name}"
+                    Visibility="{Binding ActualUSBPortCount, Converter={StaticResource PortIndexToVisibilityConverter}, ConverterParameter=4}" />
                 <ctrl:PortControl
                     PortBootstrap="{Binding USBPorts[5].BootState}"
                     PortCurrent="{Binding USBPorts[5].Current}"
@@ -74,7 +83,26 @@
                     PortNumber="{Binding USBPorts[5].Index}"
                     PortOvercurrent="{Binding USBPorts[5].Overcurrent}"
                     PortState="{Binding USBPorts[5].Enabled}"
-                    PortText="{Binding USBPorts[5].Name}" />
+                    PortText="{Binding USBPorts[5].Name}"
+                    Visibility="{Binding ActualUSBPortCount, Converter={StaticResource PortIndexToVisibilityConverter}, ConverterParameter=5}" />
+                <ctrl:PortControl
+                    PortBootstrap="{Binding USBPorts[6].BootState}"
+                    PortCurrent="{Binding USBPorts[6].Current}"
+                    PortName="USB2 Port #3"
+                    PortNumber="{Binding USBPorts[6].Index}"
+                    PortOvercurrent="{Binding USBPorts[6].Overcurrent}"
+                    PortState="{Binding USBPorts[6].Enabled}"
+                    PortText="{Binding USBPorts[6].Name}"
+                    Visibility="{Binding ActualUSBPortCount, Converter={StaticResource PortIndexToVisibilityConverter}, ConverterParameter=6}" />
+                <ctrl:PortControl
+                    PortBootstrap="{Binding USBPorts[7].BootState}"
+                    PortCurrent="{Binding USBPorts[7].Current}"
+                    PortName="USB2 Port #4"
+                    PortNumber="{Binding USBPorts[7].Index}"
+                    PortOvercurrent="{Binding USBPorts[7].Overcurrent}"
+                    PortState="{Binding USBPorts[7].Enabled}"
+                    PortText="{Binding USBPorts[7].Name}"
+                    Visibility="{Binding ActualUSBPortCount, Converter={StaticResource PortIndexToVisibilityConverter}, ConverterParameter=7}" />
             </StackPanel>
         </GroupBox>
     </Grid>

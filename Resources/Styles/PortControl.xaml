@@ -11,6 +11,7 @@
     mc:Ignorable="d">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <local:NaNToDashConverter x:Key="NaNToDashConverter" />
     </UserControl.Resources>
     <Grid>
         <StackPanel
@@ -22,20 +23,31 @@
                 Margin="5,0,0,0"
                 VerticalAlignment="Center"
                 Text="{Binding PortName, ElementName=PortControlRoot}" />
-            <Button MinWidth="80" Margin="5,0,0,0">
-                <Button.Command>
-                    <Binding Path="PortCommand" />
-                </Button.Command>
-                <!--
-                <Button.CommandParameter>
-                    <MultiBinding Converter="{StaticResource APO_PortConverter}">
-                        <Binding Path="IsPressed" RelativeSource="{RelativeSource Self}" />
-                        <Binding ElementName="PortControlRoot" Path="PortNumber" />
-                        <Binding ElementName="PortControlRoot" Path="PortType" />
-                        <Binding Source="{x:Static enums:CommandsEnum.APO_APB_OVERCURRENT}" />
-                    </MultiBinding>
-                </Button.CommandParameter>-->
-                <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Clear" />
+            <!--  Port still on: the over current switch-off failed (the box retries it)  -->
+            <TextBlock
+                Margin="5,0,0,0"
+                VerticalAlignment="Center"
+                Text="- switch-off failed, port still on"
+                Visibility="{Binding PortState, ElementName=PortControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}" />
+            <!--  Switching the port clears the over current flag: "Switch on" for a port
+                  that was switched off, "Switch off" for a port whose switch-off failed  -->
+            <Button
+                MinWidth="80"
+                Margin="5,0,0,0"
+                Click="OvercurrentButton_Click"
+                ToolTip="Switches the port and clears the over current flag">
+                <TextBlock Foreground="{StaticResource ButtonForegroundBrush}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="Switch on" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding PortState, ElementName=PortControlRoot}" Value="True">
+                                    <Setter Property="Text" Value="Switch off" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </Button>
         </StackPanel>
         <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
@@ -70,7 +82,7 @@
                 Margin="10,0,0,0"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                Text="{Binding PortCurrent, StringFormat='{}{0} A', ElementName=PortControlRoot}" />
+                Text="{Binding PortCurrent, ElementName=PortControlRoot, Converter={StaticResource NaNToDashConverter}, ConverterParameter=A}" />
             <TextBlock
                 Height="18"
                 Margin="10,0,0,0"

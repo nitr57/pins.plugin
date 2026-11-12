@@ -12,6 +12,16 @@ namespace NINA.PINS.Resources.Styles {
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Over current: switches a port that was switched off on again, or retries switching
+        /// off a port whose over current switch-off failed (still on). Switching clears the
+        /// over current flag in the box. SetCurrentValue keeps the two-way binding to the port
+        /// model.
+        /// </summary>
+        private void OvercurrentButton_Click(object sender, RoutedEventArgs e) {
+            SetCurrentValue(PortStateProperty, !PortState);
+        }
+
         private static void onPortTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             // When PortText changes, update the binding source if it exists
             if (d is PortControl control && e.NewValue != e.OldValue) {

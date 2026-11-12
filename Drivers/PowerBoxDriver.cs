@@ -139,7 +139,8 @@ namespace NINA.PINS.Drivers
         private int _actualPowerPortCount = 0;
         public int ActualPowerPortCount => _actualPowerPortCount;
 
-        private int _actualUSBPortCount = 0;
+        // -1: not known yet (all rows of the USB view are shown)
+        private int _actualUSBPortCount = -1;
         public int ActualUSBPortCount => _actualUSBPortCount;
 
         private int _actualDewPortCount = 0;
@@ -485,10 +486,13 @@ namespace NINA.PINS.Drivers
                     // Fetch initial USB port configuration
                     try
                     {
-                        PowerBoxSDK.PBGetUSBPortStatus(deviceId, out var status);
-                        _actualUSBPortCount = status.numPorts;
+                        if (PowerBoxSDK.PBGetUSBPortStatus(deviceId, out var status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                        {
+                            _actualUSBPortCount = Math.Max(0, Math.Min(status.numPorts, PowerBoxSDK.PB_MAX_USB_PORTS));
+                            OnPropertyChanged(nameof(ActualUSBPortCount));
+                        }
                         PowerBoxSDK.PB_USB_PORT_CONFIG config = new PowerBoxSDK.PB_USB_PORT_CONFIG();
-                        for (uint i = 0; i < status.numPorts; ++i)
+                        for (uint i = 0; i < Math.Max(0, _actualUSBPortCount); ++i)
                         {
                             config.index = i;
                             if (PowerBoxSDK.PBGetUSBPortConfig(deviceId, ref config) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
@@ -746,13 +750,19 @@ namespace NINA.PINS.Drivers
                                 LogPollingError("WiFi status", ex);
                             }
 
-                            // Update 5V current
-                            _supply5A = 0.0;
+                            // Update 5V current: sum of the ports with a valid measurement (NaN =
+                            // unknown, e.g. no sensor or an I2C error); unknown if there is none
+                            double sum5A = 0.0;
+                            int valid5A = 0;
                             foreach (var port in USBPorts.Ports.Take(_actualUSBPortCount))
                             {
-                                _supply5A += port.Current;
+                                if (!double.IsNaN(port.Current))
+                                {
+                                    sum5A += port.Current;
+                                    valid5A++;
+                                }
                             }
-                            _supply5A = Math.Round(_supply5A, 2);
+                            _supply5A = valid5A > 0 ? Math.Round(sum5A, 2) : double.NaN;
                             _supply5W = Math.Round(_supply5A * _powerSupply.Supply5V, 2);
 
                             OnPropertyChanged(nameof(Supply5A));
@@ -968,7 +978,7 @@ namespace NINA.PINS.Drivers
                 {
                     AddSwitch(new PowerBoxSwitch(
                         () => port.Name,
-                        () => $"USB #{port.Index + 1}: {port.Current}A",
+                        () => $"USB #{port.Index + 1}: {UsbCurrentText(port.Current)}",
                         () => port.Current,
                         switchId));
                 }
@@ -976,7 +986,11 @@ namespace NINA.PINS.Drivers
                 {
                 AddSwitch(new PowerBoxWritableSwitch(
                     () => port.Name,
-                    () => $"USB #{port.Index + 1}: {(port.Enabled ? port.Current : 0)}A",
+                    () => port.Overcurrent
+                        ? (port.Enabled
+                            ? $"USB #{port.Index + 1}: over current, switch-off failed"
+                            : $"USB #{port.Index + 1}: over current, switched off")
+                        : $"USB #{port.Index + 1}: {(port.Enabled ? UsbCurrentText(port.Current) : "0A")}",
                     () => port.Enabled ? 1 : 0,
                     (value) => port.Enabled = value != 0,
                     switchId));
@@ -1168,6 +1182,15 @@ namespace NINA.PINS.Drivers
             Logger.Trace($"Total switches configured: {_pollSwitches.Length}");
         }
 
+        /// <summary>
+        /// USB current for a switch description; "--" if unknown (no sensor, or no valid
+        /// measurement of a port that is on).
+        /// </summary>
+        private static string UsbCurrentText(double current)
+        {
+            return double.IsNaN(current) ? "--A" : $"{current}A";
+        }
+
         private void AddSwitch(PowerBoxSwitch sw)
         {
             _scannedSwitches.Add(sw);
@@ -1225,6 +1248,12 @@ namespace NINA.PINS.Drivers
                         {
                             RefreshPowerPortConfig(port.Index);
                         }
+                        else if (mask == PowerBoxSDK.MASK_PORT_ENABLE)
+                        {
+                            // Switching clears the over current flag: show it at once, so the
+                            // over current button does not flip under the mouse until the next poll
+                            RefreshPowerPortStatus();
+                        }
                     }
                 };
             }
@@ -1252,6 +1281,12 @@ namespace NINA.PINS.Drivers
                         if (!SetUSBPortConfig(port, mask))
                         {
                             RefreshUSBPortConfig(port.Index);
+                        }
+                        else if (mask == PowerBoxSDK.MASK_PORT_ENABLE)
+                        {
+                            // Switching clears the over current flag: show it at once, so the
+                            // over current button does not flip under the mouse until the next poll
+                            RefreshUSBPortStatus();
                         }
                     }
                 };
@@ -1456,28 +1491,33 @@ namespace NINA.PINS.Drivers
                 var hubConfig = config["Hub"] as JObject;
                 if (hubConfig != null)
                 {
-                    var powerPortConfig = hubConfig["PowerPort"] as JObject;
-                    if (powerPortConfig != null)
+                    // 12 V and USB ports: a missing or empty name (e.g. ports 7/8 of configs
+                    // written before the PinsBox had 8 ports) falls back to the default name
+                    var defaultHub = GetDefaultConfig()["Hub"] as JObject;
+                    string NameOrDefault(string group, string key)
                     {
-                        foreach (var port in PowerPorts.Ports)
+                        string name = (hubConfig[group] as JObject)?[key]?.ToString();
+                        if (string.IsNullOrWhiteSpace(name))
                         {
-                            var nameToken = powerPortConfig[$"Port{port.Index + 1}"];
-                            if (nameToken != null)
-                            {
-                                port.Name = nameToken.ToString();
-                            }
+                            name = (defaultHub?[group] as JObject)?[key]?.ToString();
+                        }
+                        return name;
+                    }
+
+                    foreach (var port in PowerPorts.Ports)
+                    {
+                        var name = NameOrDefault("PowerPort", $"Port{port.Index + 1}");
+                        if (name != null)
+                        {
+                            port.Name = name;
                         }
                     }
-                    var usbPortConfig = hubConfig["USBPort"] as JObject;
-                    if (usbPortConfig != null)
+                    foreach (var port in USBPorts.Ports)
                     {
-                        foreach (var port in USBPorts.Ports)
+                        var name = NameOrDefault("USBPort", $"Port{port.Index + 1}");
+                        if (name != null)
                         {
-                            var nameToken = usbPortConfig[$"Port{port.Index + 1}"];
-                            if (nameToken != null)
-                            {
-                                port.Name = nameToken.ToString();
-                            }
+                            port.Name = name;
                         }
                     }
                     var dewPortConfig = hubConfig["DewPort"] as JObject;
@@ -1649,7 +1689,9 @@ namespace NINA.PINS.Drivers
                         ["Port3"] = "12V #3",
                         ["Port4"] = "12V #4",
                         ["Port5"] = "12V #5",
-                        ["Port6"] = "12V #6"
+                        ["Port6"] = "12V #6",
+                        ["Port7"] = "12V #7",
+                        ["Port8"] = "12V #8"
                     },
                     ["AdjPort"] = new JObject
                     {
@@ -1663,7 +1705,9 @@ namespace NINA.PINS.Drivers
                         ["Port3"] = "USB3 #3",
                         ["Port4"] = "USB3 #4",
                         ["Port5"] = "USB2 #1",
-                        ["Port6"] = "USB2 #2"
+                        ["Port6"] = "USB2 #2",
+                        ["Port7"] = "USB2 #3",
+                        ["Port8"] = "USB2 #4"
                     },
                     ["DewPort"] = new JObject
                     {
@@ -2106,6 +2150,42 @@ namespace NINA.PINS.Drivers
             }
             catch { }
             finally { _isHardwareUpdate.Value = false; }
+        }
+
+        private void RefreshPowerPortStatus()
+        {
+            bool wasHardwareUpdate = _isHardwareUpdate.Value;
+            _isHardwareUpdate.Value = true;
+            try
+            {
+                lock (_sdkLock)
+                {
+                    if (PowerBoxSDK.PBGetPowerPortStatus(deviceId, out var status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
+                        _powerPorts.UpdateFromStatus(status);
+                    }
+                }
+            }
+            catch { }
+            finally { _isHardwareUpdate.Value = wasHardwareUpdate; }
+        }
+
+        private void RefreshUSBPortStatus()
+        {
+            bool wasHardwareUpdate = _isHardwareUpdate.Value;
+            _isHardwareUpdate.Value = true;
+            try
+            {
+                lock (_sdkLock)
+                {
+                    if (PowerBoxSDK.PBGetUSBPortStatus(deviceId, out var status) == PowerBoxSDK.PB_ERROR_TYPE.PB_SUCCESS)
+                    {
+                        _usbPorts.UpdateFromStatus(status);
+                    }
+                }
+            }
+            catch { }
+            finally { _isHardwareUpdate.Value = wasHardwareUpdate; }
         }
 
         private void RefreshUSBPortConfig(int index)
